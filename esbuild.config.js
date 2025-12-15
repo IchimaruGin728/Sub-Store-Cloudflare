@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Sub-Store 源码路径
-const SUB_STORE_PATH = path.join(__dirname, '../backend');
+const SUB_STORE_PATH = path.join(__dirname, 'sub-store/backend');
 
 /**
  * 创建替换插件

@@ -132,7 +132,7 @@ export async function handleSubStoreHttpRequest(options) {
     return requestContext.run(requestId, async () => {
         try {
             setupDoneCallback();
-            setupGlobals(env, userSettings);
+            setupGlobals(env, userSettings, ctx);
 
             // 解析请求
             const { parseRequest } = await import('./request.js');

@@ -52,7 +52,7 @@ export function initPolyfills() {
  * @param {object} env - Worker 环境变量
  * @param {object} userSettings - 用户自定义设置
  */
-export function setupGlobals(env, userSettings = {}) {
+export function setupGlobals(env, userSettings = {}, ctx = null) {
     // 模拟 Surge $httpClient
     globalThis.$httpClient = createHttpClient();
 
@@ -61,19 +61,28 @@ export function setupGlobals(env, userSettings = {}) {
 
     // 模拟 Surge $notification（支持 Bark 和 Pushover）
     globalThis.$notification = {
-        post: async (title, subtitle, content, opts) => {
+        post: (title, subtitle, content, opts) => {
             // 始终打印到控制台
             console.log(`[Notification] ${title}: ${subtitle} - ${content}`);
 
             // 根据用户配置发送推送
-            try {
-                if (notification.type === 'bark' && notification.bark?.deviceKey) {
-                    await sendBarkNotification(notification.bark, title, subtitle, content);
-                } else if (notification.type === 'pushover' && notification.pushover?.userKey) {
-                    await sendPushoverNotification(notification.pushover, title, subtitle, content);
+            const sendNotification = async () => {
+                try {
+                    if (notification.type === 'bark' && notification.bark?.deviceKey) {
+                        await sendBarkNotification(notification.bark, title, subtitle, content);
+                    } else if (notification.type === 'pushover' && notification.pushover?.userKey) {
+                        await sendPushoverNotification(notification.pushover, title, subtitle, content);
+                    }
+                } catch (e) {
+                    console.error('[Notification] 推送失败:', e.message);
                 }
-            } catch (e) {
-                console.error('[Notification] 推送失败:', e.message);
+            };
+
+            // 使用 ctx.waitUntil 确保请求完成，否则 fire-and-forget
+            if (ctx && typeof ctx.waitUntil === 'function') {
+                ctx.waitUntil(sendNotification());
+            } else {
+                sendNotification();
             }
         },
     };

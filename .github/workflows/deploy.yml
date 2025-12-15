@@ -97,15 +97,13 @@ jobs:
           tar -xzf sub-store.tar.gz
           mv Sub-Store-* sub-store
           
-          # 准备构建目录：backend 需要在上层目录
-          mkdir -p build/backend
-          mkdir -p build/sub-store-workers
-          cp -r sub-store/backend/* build/backend/
-          rsync -av --exclude='sub-store' --exclude='sub-store.tar.gz' --exclude='build' . build/sub-store-workers/
+          # 复制整个项目到构建目录（包含 sub-store/backend）
+          mkdir -p build
+          rsync -av --exclude='.git' --exclude='sub-store.tar.gz' --exclude='build' --exclude='node_modules' . build/
 
       - name: Configure wrangler.toml
         run: |
-          cd build/sub-store-workers
+          cd build
           cp wrangler.toml.example wrangler.toml
           sed -i 's|__D1_DATABASE_ID__|${{ secrets.D1_DATABASE_ID }}|g' wrangler.toml
           sed -i 's|__FRONTEND_URL__|${{ secrets.SUB_STORE_FRONTEND_URL }}|g' wrangler.toml
@@ -121,19 +119,19 @@ jobs:
           version: latest
 
       - name: Install backend dependencies
-        working-directory: build/backend
+        working-directory: build/sub-store/backend
         run: pnpm install
 
       - name: Install dependencies
-        working-directory: build/sub-store-workers
+        working-directory: build
         run: bun install
 
       - name: Build (with Workers-specific modifications)
-        working-directory: build/sub-store-workers
+        working-directory: build
         run: bun run build
 
       - name: Deploy to Cloudflare Workers
-        working-directory: build/sub-store-workers
+        working-directory: build
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
@@ -147,7 +145,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: build/sub-store-workers
+          workingDirectory: build
           command: d1 execute sub-store-db --remote --file=./schema.sql
 
   deploy-frontend:
