@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+src/sub-store-bundle.js
+public/dashboard/
+
+# Wrangler
+.wrangler/
+.dev.vars
+wrangler.toml
+
+# Lock files (use your own package manager)
+bun.lock
+package-lock.json
+pnpm-lock.yaml
+
+# OS files
+.DS_Store

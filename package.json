@@ -1,0 +1,25 @@
+{
+    "name": "sub-store-workers",
+    "version": "1.0.0",
+    "description": "Sub-Store Cloudflare Workers Adapter",
+    "type": "module",
+    "scripts": {
+        "build": "node esbuild.config.js",
+        "dev": "wrangler dev",
+        "dev:local": "node esbuild.config.js && wrangler dev --local",
+        "deploy": "node esbuild.config.js && wrangler deploy",
+        "tail": "wrangler tail --format=pretty",
+        "db:create": "wrangler d1 create sub-store-db",
+        "db:init": "wrangler d1 execute sub-store-db --remote --file=./schema.sql",
+        "db:init:local": "wrangler d1 execute sub-store-db --local --file=./schema.sql"
+    },
+    "devDependencies": {
+        "esbuild": "^0.20.0",
+        "wrangler": "^4.0.0"
+    },
+    "dependencies": {
+        "jose": "^6.1.3",
+        "react": "^19.2.3",
+        "react-dom": "^19.2.3"
+    }
+}

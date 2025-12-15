@@ -1,0 +1,208 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - multi-tenant
+  schedule:
+    # 每 3 天检查一次更新并部署
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: '强制部署（忽略版本检查）'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  SUBSTORE_REPO: sub-store-org/Sub-Store
+  FRONTEND_REPO: sub-store-org/Sub-Store-Front-End
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      backend_version: ${{ steps.check.outputs.backend_version }}
+      frontend_version: ${{ steps.check.outputs.frontend_version }}
+      has_frontend_url: ${{ steps.check_secret.outputs.has_frontend_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check SUB_STORE_FRONTEND_URL secret
+        id: check_secret
+        run: |
+          if [ -n "${{ secrets.SUB_STORE_FRONTEND_URL }}" ]; then
+            echo "has_frontend_url=true" >> $GITHUB_OUTPUT
+            echo "SUB_STORE_FRONTEND_URL secret is set, will deploy frontend"
+          else
+            echo "has_frontend_url=false" >> $GITHUB_OUTPUT
+            echo "SUB_STORE_FRONTEND_URL secret is NOT set, skipping frontend deploy"
+          fi
+
+      - name: Restore version cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .last-backend-version
+            .last-frontend-version
+          key: version-cache
+
+      - name: Check for updates
+        id: check
+        run: |
+          # 获取最新版本
+          BACKEND_VERSION=$(curl -s https://api.github.com/repos/${{ env.SUBSTORE_REPO }}/releases/latest | jq -r '.tag_name')
+          FRONTEND_VERSION=$(curl -s https://api.github.com/repos/${{ env.FRONTEND_REPO }}/releases/latest | jq -r '.tag_name')
+          
+          echo "backend_version=$BACKEND_VERSION" >> $GITHUB_OUTPUT
+          echo "frontend_version=$FRONTEND_VERSION" >> $GITHUB_OUTPUT
+          
+          # 获取上次部署的版本
+          LAST_BACKEND=$(cat .last-backend-version 2>/dev/null || echo "none")
+          LAST_FRONTEND=$(cat .last-frontend-version 2>/dev/null || echo "none")
+          
+          echo "Current backend: $BACKEND_VERSION (last: $LAST_BACKEND)"
+          echo "Current frontend: $FRONTEND_VERSION (last: $LAST_FRONTEND)"
+          
+          # 判断是否需要部署
+          if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]] || \
+             [[ "${{ github.event_name }}" == "push" ]] || \
+             [[ "$BACKEND_VERSION" != "$LAST_BACKEND" ]] || \
+             [[ "$FRONTEND_VERSION" != "$LAST_FRONTEND" ]]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            echo "No updates found, skipping deploy"
+          fi
+
+  deploy-backend:
+    needs: check-updates
+    if: needs.check-updates.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    name: Deploy Backend
+
+    steps:
+      - name: Checkout workers adapter
+        uses: actions/checkout@v4
+
+      - name: Download Sub-Store source code
+        run: |
+          VERSION=${{ needs.check-updates.outputs.backend_version }}
+          echo "Downloading Sub-Store source $VERSION..."
+          # 下载源码
+          curl -L "https://github.com/${{ env.SUBSTORE_REPO }}/archive/refs/tags/${VERSION}.tar.gz" -o sub-store.tar.gz
+          tar -xzf sub-store.tar.gz
+          mv Sub-Store-* sub-store
+          
+          # 准备构建目录：backend 需要在上层目录
+          mkdir -p build/backend
+          mkdir -p build/sub-store-workers
+          cp -r sub-store/backend/* build/backend/
+          rsync -av --exclude='sub-store' --exclude='sub-store.tar.gz' --exclude='build' . build/sub-store-workers/
+
+      - name: Configure wrangler.toml
+        run: |
+          cd build/sub-store-workers
+          cp wrangler.toml.example wrangler.toml
+          sed -i 's|__D1_DATABASE_ID__|${{ secrets.D1_DATABASE_ID }}|g' wrangler.toml
+          sed -i 's|__FRONTEND_URL__|${{ secrets.SUB_STORE_FRONTEND_URL }}|g' wrangler.toml
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install backend dependencies
+        working-directory: build/backend
+        run: pnpm install
+
+      - name: Install dependencies
+        working-directory: build/sub-store-workers
+        run: bun install
+
+      - name: Build (with Workers-specific modifications)
+        working-directory: build/sub-store-workers
+        run: bun run build
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: build/sub-store-workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          npx wrangler deploy 2>&1 | grep -v 'workers.dev' | grep -v 'https://' || true
+          echo "Deploy completed"
+
+      - name: Initialize D1 Database (safe - uses IF NOT EXISTS)
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: build/sub-store-workers
+          command: d1 execute sub-store-db --remote --file=./schema.sql
+
+  deploy-frontend:
+    needs: check-updates
+    if: |
+      needs.check-updates.outputs.should_deploy == 'true' && 
+      needs.check-updates.outputs.has_frontend_url == 'true'
+    runs-on: ubuntu-latest
+    name: Deploy Frontend
+
+    steps:
+      - name: Download Sub-Store Frontend dist
+        run: |
+          VERSION=${{ needs.check-updates.outputs.frontend_version }}
+          echo "Downloading Sub-Store Frontend $VERSION..."
+          # 直接下载 release 中的 dist.zip（已构建好）
+          curl -L "https://github.com/${{ env.FRONTEND_REPO }}/releases/download/${VERSION}/dist.zip" -o dist.zip
+          unzip dist.zip -d frontend-dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: pages deploy frontend-dist --project-name=sub-store-frontend
+
+  update-version-cache:
+    needs: [check-updates, deploy-backend, deploy-frontend]
+    if: always() && needs.check-updates.outputs.should_deploy == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-frontend.result == 'success')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create version files
+        run: |
+          echo "${{ needs.check-updates.outputs.backend_version }}" > .last-backend-version
+          echo "${{ needs.check-updates.outputs.frontend_version }}" > .last-frontend-version
+
+      - name: Save version cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .last-backend-version
+            .last-frontend-version
+          key: version-cache
+
+  summary:
+    needs: [check-updates, deploy-backend, deploy-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Summary
+        run: |
+          echo "## 🚀 Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Version | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.check-updates.outputs.backend_version }} | ${{ needs.deploy-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.check-updates.outputs.frontend_version }} | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
