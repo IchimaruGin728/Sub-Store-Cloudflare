@@ -48,7 +48,9 @@ jobs:
           path: |
             .last-backend-version
             .last-frontend-version
-          key: version-cache
+          key: version-cache-${{ github.run_id }}
+          restore-keys: |
+            version-cache-
 
       - name: Check for updates
         id: check
@@ -189,7 +191,7 @@ jobs:
           path: |
             .last-backend-version
             .last-frontend-version
-          key: version-cache
+          key: version-cache-${{ github.run_id }}
 
   summary:
     needs: [check-updates, deploy-backend, deploy-frontend]
