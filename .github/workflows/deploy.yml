@@ -26,6 +26,7 @@ jobs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
       backend_version: ${{ steps.check.outputs.backend_version }}
       frontend_version: ${{ steps.check.outputs.frontend_version }}
+      deploy_frontend: ${{ steps.frontend-check.outputs.deploy_frontend }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,6 +67,17 @@ jobs:
           else
             echo "should_deploy=false" >> $GITHUB_OUTPUT
             echo "No updates found, skipping deploy"
+          fi
+
+      - name: Check frontend deploy flag
+        id: frontend-check
+        env:
+          DEPLOY_FRONTEND_SECRET: ${{ secrets.DEPLOY_SUB_STORE_FRONTEND }}
+        run: |
+          if [ -n "$DEPLOY_FRONTEND_SECRET" ]; then
+            echo "deploy_frontend=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_frontend=false" >> $GITHUB_OUTPUT
           fi
 
   deploy-backend:
@@ -139,9 +151,7 @@ jobs:
 
   deploy-frontend:
     needs: check-updates
-    if: |
-      needs.check-updates.outputs.should_deploy == 'true' && 
-      secrets.DEPLOY_SUB_STORE_FRONTEND != ''
+    if: needs.check-updates.outputs.should_deploy == 'true' && needs.check-updates.outputs.deploy_frontend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Frontend
 
