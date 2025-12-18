@@ -6,6 +6,7 @@ import ChangePasswordModal from './ChangePasswordModal';
 import EditUserModal from './EditUserModal';
 import ChangeUsernameModal from './ChangeUsernameModal';
 import Footer from './Footer';
+import SystemSettings from './SystemSettings';
 
 const AdminDashboard = () => {
     const { token, frontendUrl, logout } = useAuth();
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
     const [showUsernameModal, setShowUsernameModal] = useState(false);
     const [currentUsername, setCurrentUsername] = useState('');
     const [createExpanded, setCreateExpanded] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
 
     const refresh = () => fetch('/api/dashboard/admin/users', { headers: { 'Authorization': `Bearer ${token}` } })
         .then(res => res.json())
@@ -97,6 +99,11 @@ const AdminDashboard = () => {
 
     const baseUrl = window.location.origin;
     const getOpenFrontendUrl = (userPath) => `${frontendUrl}?api=${encodeURIComponent(`${baseUrl}/${userPath}`)}`;
+
+    // 显示系统设置页面
+    if (showSettings) {
+        return <SystemSettings onBack={() => setShowSettings(false)} />;
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -184,8 +191,9 @@ const AdminDashboard = () => {
                 </div>
             </nav>
 
-            <main className="max-w-6xl mx-auto px-4 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+                {/* 操作卡片行 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* 创建用户卡片 - 可折叠 */}
                     <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
                         <button
@@ -236,88 +244,110 @@ const AdminDashboard = () => {
                         )}
                     </div>
 
-                    {/* 用户列表 */}
-                    <div className="lg:col-span-2 backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
-                        <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-                            <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            用户列表
-                            <span className="ml-2 px-2 py-0.5 bg-slate-700 rounded-full text-xs text-gray-400">{users.length}</span>
-                        </h2>
-
-                        <div className="space-y-3">
-                            {users.map(u => (
-                                <div key={u.id} className="bg-slate-800/50 rounded-xl p-4">
-                                    <div className="flex items-center gap-4 mb-3">
-                                        {u.avatarUrl ? (
-                                            <img src={u.avatarUrl} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
-                                        ) : (
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${u.role === 'admin' ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-slate-600 to-slate-700'}`}>
-                                                <span className="text-white font-medium text-sm">{u.username[0].toUpperCase()}</span>
-                                            </div>
-                                        )}
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="text-white font-medium">{u.username}</span>
-                                                {u.role === 'admin' && (
-                                                    <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs">管理员</span>
-                                                )}
-                                                {u.notes && (
-                                                    <span className="px-2 py-0.5 bg-slate-700/50 text-gray-400 rounded text-xs">{u.notes}</span>
-                                                )}
-                                            </div>
-                                            <code className="text-gray-500 text-xs font-mono truncate block">{u.path}</code>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        {u.role !== 'admin' && (
-                                            <button
-                                                onClick={() => impersonate(u.username, u.path)}
-                                                className="px-3 py-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg text-xs transition-colors"
-                                            >
-                                                切换
-                                            </button>
-                                        )}
-                                        <a
-                                            href={getOpenFrontendUrl(u.path)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 rounded-lg text-xs transition-colors"
-                                        >
-                                            打开
-                                        </a>
-                                        <button
-                                            onClick={() => handleEdit(u.id)}
-                                            className="px-3 py-1.5 bg-slate-700 text-gray-300 hover:bg-slate-600 rounded-lg text-xs transition-colors"
-                                        >
-                                            编辑
-                                        </button>
-                                        <button
-                                            onClick={() => setResettingUser(u.id)}
-                                            className="px-3 py-1.5 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg text-xs transition-colors"
-                                        >
-                                            密码
-                                        </button>
-                                        {u.role !== 'admin' && (
-                                            <button
-                                                onClick={() => handleDelete(u.id, u.role, u.username)}
-                                                className="px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-xs transition-colors"
-                                            >
-                                                删除
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {users.length === 0 && (
-                                <div className="text-center py-12 text-gray-500">
-                                    暂无用户
-                                </div>
-                            )}
+                    {/* 系统设置卡片 */}
+                    <button
+                        onClick={() => setShowSettings(true)}
+                        className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center justify-between w-full text-left hover:bg-white/10 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-white font-medium">系统设置</h3>
+                                <p className="text-gray-500 text-sm">管理全局配置选项</p>
+                            </div>
                         </div>
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* 用户列表 */}
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        用户列表
+                        <span className="ml-2 px-2 py-0.5 bg-slate-700 rounded-full text-xs text-gray-400">{users.length}</span>
+                    </h2>
+
+                    <div className="space-y-3">
+                        {users.map(u => (
+                            <div key={u.id} className="bg-slate-800/50 rounded-xl p-4">
+                                <div className="flex items-center gap-4 mb-3">
+                                    {u.avatarUrl ? (
+                                        <img src={u.avatarUrl} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                                    ) : (
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${u.role === 'admin' ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-slate-600 to-slate-700'}`}>
+                                            <span className="text-white font-medium text-sm">{u.username[0].toUpperCase()}</span>
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-white font-medium">{u.username}</span>
+                                            {u.role === 'admin' && (
+                                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs">管理员</span>
+                                            )}
+                                            {u.notes && (
+                                                <span className="px-2 py-0.5 bg-slate-700/50 text-gray-400 rounded text-xs">{u.notes}</span>
+                                            )}
+                                        </div>
+                                        <code className="text-gray-500 text-xs font-mono truncate block">{u.path}</code>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {u.role !== 'admin' && (
+                                        <button
+                                            onClick={() => impersonate(u.username, u.path)}
+                                            className="px-3 py-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg text-xs transition-colors"
+                                        >
+                                            切换
+                                        </button>
+                                    )}
+                                    <a
+                                        href={getOpenFrontendUrl(u.path)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 rounded-lg text-xs transition-colors"
+                                    >
+                                        打开
+                                    </a>
+                                    <button
+                                        onClick={() => handleEdit(u.id)}
+                                        className="px-3 py-1.5 bg-slate-700 text-gray-300 hover:bg-slate-600 rounded-lg text-xs transition-colors"
+                                    >
+                                        编辑
+                                    </button>
+                                    <button
+                                        onClick={() => setResettingUser(u.id)}
+                                        className="px-3 py-1.5 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg text-xs transition-colors"
+                                    >
+                                        密码
+                                    </button>
+                                    {u.role !== 'admin' && (
+                                        <button
+                                            onClick={() => handleDelete(u.id, u.role, u.username)}
+                                            className="px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-xs transition-colors"
+                                        >
+                                            删除
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {users.length === 0 && (
+                            <div className="text-center py-12 text-gray-500">
+                                暂无用户
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

@@ -2,7 +2,7 @@
 # 复制此文件为 wrangler.toml 并填写实际配置
 
 name = "sub-store"
-main = "dist/worker.js"
+main = "src/index.js"
 compatibility_date = "2025-11-17"
 compatibility_flags = ["nodejs_compat"]
 
@@ -14,21 +14,13 @@ binding = "DB"
 database_name = "sub-store-db"
 database_id = "__D1_DATABASE_ID__"
 
-# 环境变量
-[vars]
-SUB_STORE_FRONTEND_URL = "__FRONTEND_URL__"
-
 # Cron 触发器 - 每 6 小时执行一次
 [triggers]
 crons = ["0 */6 * * *"]
 
-# 开发环境配置
-[dev]
-port = 3000
-
 # 静态资源配置 - Dashboard
 [assets]
-directory = "./public"
+directory = "./client"
 binding = "ASSETS"
 
 # 速率限制配置 - 保护登录接口

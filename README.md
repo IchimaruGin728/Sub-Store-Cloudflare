@@ -56,7 +56,7 @@
 
 ### 第三步：创建 Cloudflare Pages 项目（前端）
 
-如果你想直接使用官方前端，可以跳过此步骤，并且后面的 GitHub Secrets 中的 `SUB_STORE_FRONTEND_URL` 也无需设置。
+如果你想直接使用官方前端，可以跳过此步骤，并且后面的 GitHub Secrets 中的 `DEPLOY_SUB_STORE_FRONTEND` 也无需设置。
 
 1. 在 Cloudflare Dashboard 选择 **Workers & Pages**
 2. 点击 **Create** → **Pages** → **Direct Upload**
@@ -90,7 +90,7 @@
 | `CF_API_TOKEN` | Cloudflare API Token | `xxxxxxxxx` |
 | `CF_ACCOUNT_ID` | Cloudflare Account ID | `xxxxxxxxx` |
 | `D1_DATABASE_ID` | D1 数据库 ID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
-| `SUB_STORE_FRONTEND_URL` | Sub-Store 前端地址 (可选，留空则 Action 不会自动部署前端) | `https://sub-store.vercel.app/` |
+| `DEPLOY_SUB_STORE_FRONTEND` | 是否部署 Sub-Store 前端 (可选，任意值为部署，不设置该变量则不部署前端) | `true` |
 
 ### 第七步：触发部署
 
@@ -100,7 +100,7 @@
 
 部署完成后：
 - 后端：`https://sub-store.<your-subdomain>.workers.dev` 或你的域名
-- 前端：`https://sub-store-frontend.pages.dev` 或你的域名
+- 前端：请到你的 Cloudflare Pages 项目中查看并绑定域名
 - 控制台：`你的后端域名/dashboard/`
 
 ---
@@ -134,10 +134,11 @@
 
 ### 前置要求
 
-- Node.js >= 18
 - bun
 
 ### 快速开始
+
+需要先下载 Sub-Store 源码到 `sub-store` 目录并且安装依赖 `cd sub-store/backend && pnpm install`
 
 ```bash
 # 安装依赖
@@ -147,7 +148,13 @@ bun install
 bun run db:init:local
 
 # 启动开发服务器
-bun run dev:local
+bun run dev
+
+# 编译
+bun run build
+
+# 预览(使用与 Workers 相同的环境)
+bun run preview
 ```
 
 访问 http://localhost:3000 测试
@@ -156,9 +163,14 @@ bun run dev:local
 
 | 命令 | 说明 |
 |------|------|
-| `bun run build` | 仅构建 |
-| `bun run dev:local` | 本地开发服务器 |
+| `bun run build` | 构建 |
+| `bun run dev` | 本地开发服务器 |
+| `bun run db:create` | 创建数据库 |
 | `bun run db:init:local` | 初始化本地数据库 |
+| `bun run db:init:remote` | 初始化远程数据库 |
+| `bun run deploy:local` | 从本地部署到 Cloudflare |
+| `bun run deploy:action` | 从 GitHub Actions 部署到 Cloudflare |
+| `bun run tail` | 实时查看 Cloudflare Worker 生产环境的日志 |
 
 ---
 

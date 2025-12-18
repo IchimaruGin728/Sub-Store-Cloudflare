@@ -3,6 +3,8 @@
  * 使用 Workers 原生 fetch 实现 Surge $httpClient 接口
  */
 
+import { debug, warn, error } from '../utils/logger.js';
+
 export function createHttpClient() {
     const methods = ['get', 'post', 'put', 'delete', 'head', 'options', 'patch'];
 
@@ -12,7 +14,7 @@ export function createHttpClient() {
         client[method] = (opts, callback) => {
             const options = typeof opts === 'string' ? { url: opts } : { ...opts };
 
-            console.log(`[HTTP] 请求: ${method.toUpperCase()} ${options.url}`);
+            debug(`[HTTP] 请求: ${method.toUpperCase()} ${options.url}`);
 
             const fetchOptions = {
                 method: method.toUpperCase(),
@@ -43,7 +45,7 @@ export function createHttpClient() {
 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => {
-                console.log(`[HTTP] 超时: ${timeout}ms - ${options.url}`);
+                warn(`[HTTP] 超时: ${timeout}ms - ${options.url}`);
                 controller.abort();
             }, timeout);
             fetchOptions.signal = controller.signal;
@@ -72,7 +74,7 @@ export function createHttpClient() {
                         headers[key] = value;
                     });
 
-                    console.log(`[HTTP] 响应: ${method.toUpperCase()} ${options.url} -> ${response.status}`);
+                    debug(`[HTTP] 响应: ${method.toUpperCase()} ${options.url} -> ${response.status}`);
 
                     callback(null, {
                         status: response.status,
@@ -82,7 +84,7 @@ export function createHttpClient() {
                 })
                 .catch((err) => {
                     clearTimeout(timeoutId);
-                    console.error(`[HTTP] 错误: ${method.toUpperCase()} ${options.url} - ${err.message}`);
+                    error(`[HTTP] 错误: ${method.toUpperCase()} ${options.url} - ${err.message}`);
                     callback(err.message || String(err), null, null);
                 });
         };

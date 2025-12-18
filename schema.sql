@@ -28,3 +28,13 @@ CREATE TABLE IF NOT EXISTS captchas (
 
 -- 自动清理过期验证码的索引
 CREATE INDEX IF NOT EXISTS idx_captchas_expires ON captchas(expires_at);
+
+-- 系统设置表 (单行存储所有设置)
+CREATE TABLE IF NOT EXISTS system_settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),  -- 确保只有一行
+  settings TEXT DEFAULT '{}',              -- JSON 格式存储所有设置
+  updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+);
+
+-- 初始化空设置行
+INSERT OR IGNORE INTO system_settings (id) VALUES (1);

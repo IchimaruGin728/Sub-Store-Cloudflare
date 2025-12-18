@@ -4,17 +4,20 @@
     "description": "Sub-Store Cloudflare Workers Adapter",
     "type": "module",
     "scripts": {
-        "build": "node esbuild.config.js",
-        "dev": "wrangler dev",
-        "dev:local": "node esbuild.config.js && wrangler dev --local",
-        "deploy": "node esbuild.config.js && wrangler deploy",
-        "tail": "wrangler tail --format=pretty",
-        "db:create": "wrangler d1 create sub-store-db",
-        "db:init": "wrangler d1 execute sub-store-db --remote --file=./schema.sql",
-        "db:init:local": "wrangler d1 execute sub-store-db --local --file=./schema.sql"
+        "dev": "vite dev --host 0.0.0.0 --port 3000",
+        "build": "vite build",
+        "preview": "vite preview --host 0.0.0.0 --port 3000",
+        "deploy:local": "npx wrangler deploy",
+        "deploy:action": "npx wrangler deploy 2>&1 | grep -v 'workers.dev' | grep -v 'https://' || true",
+        "tail": "npx wrangler tail --format=pretty",
+        "db:create": "npx wrangler d1 create sub-store-db",
+        "db:init": "npx wrangler d1 execute sub-store-db --remote --file=./schema.sql",
+        "db:init:local": "npx wrangler d1 execute sub-store-db --local --file=./schema.sql"
     },
     "devDependencies": {
-        "esbuild": "^0.20.0",
+        "@cloudflare/vite-plugin": "^1.18.0",
+        "@vitejs/plugin-react": "^5.1.2",
+        "vite": "^7.3.0",
         "wrangler": "^4.0.0"
     },
     "dependencies": {

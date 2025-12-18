@@ -3,7 +3,7 @@
  * 每个用户通过其专属路径访问独立的 Sub-Store
  */
 
-// 初始化全局 polyfills（必须在 import sub-store-bundle 之前）
+// 初始化全局 polyfills（必须在 import Sub-Store 之前）
 import './core/globals.js';
 
 import { handleDashboardRequest } from './dashboard/router.js';
@@ -11,6 +11,7 @@ import { getUserByPath } from './dashboard/user.js';
 import { setupGlobals } from './core/globals.js';
 import { handleSubStoreHttpRequest, handleSubStoreCronRequest } from './core/substore.js';
 import { handleCORS } from './core/request.js';
+import { initLogger, info, error } from './utils/logger.js';
 
 /**
  * Workers Export
@@ -20,6 +21,9 @@ export default {
      * HTTP Fetch Handler
      */
     async fetch(request, env, ctx) {
+        // 初始化日志模块
+        initLogger(env);
+
         const url = new URL(request.url);
         const pathSegments = url.pathname.split('/').filter(Boolean);
 
@@ -64,21 +68,23 @@ export default {
      * 遍历所有用户执行定时任务
      */
     async scheduled(event, env, ctx) {
-        console.log('[Cron] 开始执行定时任务...');
+        // 初始化日志模块
+        initLogger(env);
+        info('[Cron] 开始执行定时任务...');
 
         try {
             // 获取所有用户
             const { results: users } = await env.DB.prepare('SELECT * FROM users').all();
-            console.log(`[Cron] 找到 ${users.length} 个用户`);
+            info(`[Cron] 找到 ${users.length} 个用户`);
 
             // 遍历处理每个用户
             for (const user of users) {
                 await handleSubStoreCronRequest({ user, env });
             }
 
-            console.log('[Cron] 定时任务执行完成');
-        } catch (error) {
-            console.error('[Cron] 定时任务执行失败:', error.message);
+            info('[Cron] 定时任务执行完成');
+        } catch (err) {
+            error('[Cron] 定时任务执行失败:', err.message);
         }
     },
 };

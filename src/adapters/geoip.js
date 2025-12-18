@@ -3,10 +3,12 @@
  * 初期禁用，返回空结果
  */
 
+import { debug } from '../utils/logger.js';
+
 export class MMDB {
     constructor(options = {}) {
         // 初期禁用 GeoIP 功能
-        console.log('[MMDB] GeoIP disabled in Workers environment');
+        debug('[MMDB] GeoIP disabled in Workers environment');
     }
 
     /**

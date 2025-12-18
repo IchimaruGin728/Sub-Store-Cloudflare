@@ -46,5 +46,5 @@ const App = () => {
 };
 
 // ===== 初始化应用 =====
-const root = createRoot(document.getElementById('root'));
+const root = createRoot(document.getElementById('app'));
 root.render(<App />);

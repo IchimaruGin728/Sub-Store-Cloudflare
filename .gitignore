@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 sub-store
+sub-store*
 
 # Build output
 dist/

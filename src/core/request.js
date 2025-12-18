@@ -3,6 +3,8 @@
  * 解析请求和构建响应
  */
 
+import { debug } from '../utils/logger.js';
+
 /**
  * CORS 响应头
  */
@@ -72,7 +74,7 @@ export function buildResponse(result) {
         status = match ? parseInt(match[0], 10) : 200;
     }
 
-    console.log('[Workers] buildResponse parsed status:', status, 'body length:', response.body?.length || 0);
+    debug('[Workers] buildResponse parsed status:', status, 'body length:', response.body?.length || 0);
 
     return new Response(response.body || '', {
         status: status,

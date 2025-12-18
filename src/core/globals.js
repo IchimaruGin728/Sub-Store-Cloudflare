@@ -1,9 +1,11 @@
 /**
- * 全局 Polyfills 和环境设置
- * 模拟 Node.js 和 Surge 环境
+ * 全局环境设置
+ * 初始化 Sub-Store 所需的全局对象和适配器
+ * 注意：import Sub-Store 前，必须先调用此模块
  */
 
 import { createHttpClient } from '../adapters/http-client.js';
+import { debug, info, error } from '../utils/logger.js';
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import streamPromises from 'node:stream/promises';
@@ -19,7 +21,7 @@ export function initPolyfills() {
     globalThis.__path_shim__ = path;
     globalThis.__stream_promises_shim__ = streamPromises;
 
-    // CRITICAL: 设置 process 必须在导入 sub-store-bundle.js 之前
+    // CRITICAL: 设置 process 必须在导入 Sub-Store 之前
     globalThis.process = {
         env: {},
         version: 'v20.0.0',
@@ -63,7 +65,7 @@ export function setupGlobals(env, userSettings = {}, ctx = null) {
     globalThis.$notification = {
         post: (title, subtitle, content, opts) => {
             // 始终打印到控制台
-            console.log(`[Notification] ${title}: ${subtitle} - ${content}`);
+            debug(`[Notification] ${title}: ${subtitle} - ${content}`);
 
             // 根据用户配置发送推送
             const sendNotification = async () => {
@@ -74,7 +76,7 @@ export function setupGlobals(env, userSettings = {}, ctx = null) {
                         await sendPushoverNotification(notification.pushover, title, subtitle, content);
                     }
                 } catch (e) {
-                    console.error('[Notification] 推送失败:', e.message);
+                    error('[Notification] 推送失败:', e.message);
                 }
             };
 
@@ -136,7 +138,7 @@ async function sendBarkNotification(config, title, subtitle, content) {
     if (!res.ok) {
         throw new Error(`Bark 推送失败: ${res.status}`);
     }
-    console.log('[Notification] Bark 推送成功');
+    info('[Notification] Bark 推送成功');
 }
 
 /**
@@ -162,7 +164,7 @@ async function sendPushoverNotification(config, title, subtitle, content) {
     if (!res.ok) {
         throw new Error(`Pushover 推送失败: ${res.status}`);
     }
-    console.log('[Notification] Pushover 推送成功');
+    info('[Notification] Pushover 推送成功');
 }
 
 // 模块加载时初始化 polyfills

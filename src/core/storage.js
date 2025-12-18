@@ -3,6 +3,8 @@
  * 处理用户数据的读写和持久化
  */
 
+import { debug, info } from '../utils/logger.js';
+
 /**
  * 创建用户专属的存储实例
  * 使用用户的 data 字段作为存储
@@ -30,7 +32,7 @@ export function createUserStorage(user) {
 
             // 检测备份恢复：当写入 'sub-store' 时（OpenAPI 会去掉 # 前缀），需要重新初始化
             if (key === 'sub-store') {
-                console.log('[Workers] 检测到备份恢复，标记需要重新初始化');
+                debug('[Workers] 检测到备份恢复，标记需要重新初始化');
                 globalThis.__need_reinit__ = true;
             }
 
@@ -50,7 +52,7 @@ export async function saveUserData(db, userId) {
         await db.prepare('UPDATE users SET data = ?, updated_at = ? WHERE id = ?')
             .bind(data, Date.now(), userId).run();
         globalThis.__user_data_dirty__ = false;
-        console.log(`[Workers] 用户数据已保存: userId=${userId}`);
+        info(`[Workers] 用户数据已保存: userId=${userId}`);
     }
 }
 

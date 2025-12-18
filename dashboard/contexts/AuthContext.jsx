@@ -49,6 +49,20 @@ export const AuthProvider = ({ children }) => {
                     setRole(null);
                     setUserPath(null);
                     setFrontendUrl(FRONTEND_DEFAULT_URL);
+                } else if (res.ok) {
+                    // 刷新 frontendUrl
+                    try {
+                        const settingsRes = await fetch('/api/dashboard/settings/public');
+                        if (settingsRes.ok) {
+                            const settings = await settingsRes.json();
+                            if (settings.frontendUrl) {
+                                localStorage.setItem('ss_frontend_url', settings.frontendUrl);
+                                setFrontendUrl(settings.frontendUrl);
+                            }
+                        }
+                    } catch (e) {
+                        // 忽略刷新失败
+                    }
                 }
                 // 其他错误（网络问题、超时等）不处理，保持当前状态
             } catch (e) {

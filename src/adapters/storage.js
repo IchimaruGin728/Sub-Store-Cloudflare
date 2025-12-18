@@ -3,6 +3,8 @@
  * 实现与 $persistentStore 兼容的同步接口
  */
 
+import { debug, info, error } from '../utils/logger.js';
+
 // 全局缓存（Worker 实例级别）
 const globalCache = new Map();
 let lastCacheUpdateTime = 0;
@@ -28,9 +30,9 @@ export class D1Storage {
             // 2. 比较版本，决定是否重载
             if (lastDbUpdate > lastCacheUpdateTime || globalCache.size === 0) {
                 if (lastCacheUpdateTime > 0) {
-                    console.log(`[D1Storage] 检测到数据变更 (DB: ${lastDbUpdate} > Cache: ${lastCacheUpdateTime})，重新加载...`);
+                    debug(`[D1Storage] 检测到数据变更 (DB: ${lastDbUpdate} > Cache: ${lastCacheUpdateTime})，重新加载...`);
                 } else {
-                    console.log(`[D1Storage] 首次加载数据...`);
+                    debug(`[D1Storage] 首次加载数据...`);
                 }
 
                 const { results } = await this.db.prepare('SELECT key, value, updated_at FROM sub_store_data').all();
@@ -46,12 +48,12 @@ export class D1Storage {
                 // 简单点：直接信任 DB 的 MAX(updated_at) 为当前版本
                 lastCacheUpdateTime = lastDbUpdate;
 
-                console.log(`[D1Storage] 已加载 ${results.length} 条数据，版本: ${lastCacheUpdateTime}`);
+                debug(`[D1Storage] 已加载 ${results.length} 条数据，版本: ${lastCacheUpdateTime}`);
             } else {
-                console.log(`[D1Storage] 缓存已是最新 (版本: ${lastCacheUpdateTime})，跳过加载`);
+                debug(`[D1Storage] 缓存已是最新 (版本: ${lastCacheUpdateTime})，跳过加载`);
             }
         } catch (e) {
-            console.log(`[D1Storage] 预加载失败（如果是首次运行可忽略）: ${e.message}`);
+            debug(`[D1Storage] 预加载失败（如果是首次运行可忽略）: ${e.message}`);
         }
     }
 
@@ -60,7 +62,6 @@ export class D1Storage {
      */
     read(key) {
         const value = globalCache.get(key);
-        // console.log(`[D1Storage] 读取 key="${key}" 命中=${value !== undefined}`); // 减少日志噪音
         return value ?? null;
     }
 
@@ -68,7 +69,7 @@ export class D1Storage {
      * 同步写入（写入全局缓存，标记待持久化）
      */
     write(data, key) {
-        console.log(`[D1Storage] 写入 key="${key}" 数据长度=${data?.length || 0}`);
+        debug(`[D1Storage] 写入 key="${key}" 数据长度=${data?.length || 0}`);
         // 立即更新全局缓存，保证同一请求后续读取（以及同一实例后续请求）能读到最新值
         globalCache.set(key, data);
         this.pendingWrites.set(key, data);
@@ -79,7 +80,7 @@ export class D1Storage {
      * 同步删除
      */
     delete(key) {
-        console.log(`[D1Storage] 删除 key="${key}"`);
+        debug(`[D1Storage] 删除 key="${key}"`);
         globalCache.delete(key);
         this.pendingWrites.set(key, null);
         return true;
@@ -89,10 +90,9 @@ export class D1Storage {
      * 请求结束时批量持久化到 D1
      */
     async flush() {
-        console.log(`[D1Storage] 开始持久化，待写入数量=${this.pendingWrites.size}`);
+        debug(`[D1Storage] 开始持久化，待写入数量=${this.pendingWrites.size}`);
 
         if (this.pendingWrites.size === 0) {
-            // console.log(`[D1Storage] 没有数据需要持久化`);
             return;
         }
 
@@ -104,7 +104,7 @@ export class D1Storage {
                 batch.push(
                     this.db.prepare('DELETE FROM sub_store_data WHERE key = ?').bind(key)
                 );
-                console.log(`[D1Storage] 队列: 删除 key="${key}"`);
+                debug(`[D1Storage] 队列: 删除 key="${key}"`);
             } else {
                 batch.push(
                     this.db
@@ -113,20 +113,20 @@ export class D1Storage {
                         )
                         .bind(key, value, now)
                 );
-                console.log(`[D1Storage] 队列: 更新 key="${key}" 数据长度=${value?.length || 0}`);
+                debug(`[D1Storage] 队列: 更新 key="${key}" 数据长度=${value?.length || 0}`);
             }
         }
 
         try {
             await this.db.batch(batch);
-            console.log(`[D1Storage] 成功持久化 ${batch.length} 条操作`);
+            info(`[D1Storage] 成功持久化 ${batch.length} 条操作`);
             // 更新本地缓存版本，避免下一请求无效重载
             if (now > lastCacheUpdateTime) {
                 lastCacheUpdateTime = now;
             }
         } catch (e) {
-            console.error(`[D1Storage] 持久化错误: ${e.message}`);
-            console.error(`[D1Storage] 错误堆栈: ${e.stack}`);
+            error(`[D1Storage] 持久化错误: ${e.message}`);
+            error(`[D1Storage] 错误堆栈: ${e.stack}`);
         }
 
         this.pendingWrites.clear();

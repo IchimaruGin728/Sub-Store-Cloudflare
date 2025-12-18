@@ -1,6 +1,7 @@
 import { signToken, authenticateRequest } from './auth.js';
 import { getUser, getUserByPath, getUserById, createUser, updateUserData, updateUsername, updatePath, listUsers, deleteUser, updatePassword, updateNotes, generatePath } from './user.js';
 import { createCaptcha, verifyCaptcha } from './captcha.js';
+import { getSystemSettings, updateSystemSettings, getSetting } from './settings.js';
 
 // ===== Response Helpers =====
 
@@ -84,6 +85,12 @@ export async function handleDashboardRequest(request, env) {
             return jsonResponse(captcha);
         }
 
+        // GET /api/dashboard/settings/public - 公开设置
+        if (path === '/api/dashboard/settings/public' && method === 'GET') {
+            const frontendUrl = await getSetting(db, 'frontendUrl');
+            return jsonResponse({ frontendUrl });
+        }
+
         // POST /api/dashboard/auth/login
         if (path === '/api/dashboard/auth/login' && method === 'POST') {
             const { username, password, captchaId, captchaCode } = await request.json();
@@ -108,7 +115,7 @@ export async function handleDashboardRequest(request, env) {
             }
 
             const token = await signToken({ id: user.id, username: user.username, role: user.role });
-            const frontendUrl = env.SUB_STORE_FRONTEND_URL || 'https://sub-store.vercel.app/';
+            const frontendUrl = await getSetting(db, 'frontendUrl');
             return jsonResponse({ token, role: user.role, path: user.path, frontendUrl });
         }
 
@@ -219,6 +226,19 @@ export async function handleDashboardRequest(request, env) {
                 await createUser(db, username, password, role || 'user');
                 const newUser = await getUser(db, username);
                 return jsonResponse({ status: 'created', path: newUser.path });
+            }
+
+            // GET /api/dashboard/admin/settings
+            if (path === '/api/dashboard/admin/settings' && method === 'GET') {
+                const settings = await getSystemSettings(db);
+                return jsonResponse(settings);
+            }
+
+            // POST /api/dashboard/admin/settings
+            if (path === '/api/dashboard/admin/settings' && method === 'POST') {
+                const newSettings = await request.json();
+                await updateSystemSettings(db, newSettings);
+                return okResponse();
             }
 
             // /api/dashboard/admin/user/:id/:action?
