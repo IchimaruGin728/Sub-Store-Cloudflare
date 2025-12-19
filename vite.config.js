@@ -158,6 +158,67 @@ function subStoreTransformPlugin() {
                 );
             }
 
+            // ============ open-api.js 修改：请求级缓存隔离 ============
+            if (id.includes('vendor/open-api.js')) {
+                // 注入获取当前请求 ID 的辅助函数
+                // 在 OpenAPI 类之前注入
+                if (contents.includes('export class OpenAPI')) {
+                    contents = contents.replace(
+                        'export class OpenAPI',
+                        `// 获取当前请求的缓存（请求级隔离）
+function __getRequestCache__() {
+    const requestId = globalThis.__current_request_id__;
+    if (globalThis.__substore_request_caches__ && requestId !== undefined) {
+        return globalThis.__substore_request_caches__.get(requestId) || {};
+    }
+    return {};
+}
+
+// 设置当前请求的缓存
+function __setRequestCache__(key, value) {
+    const requestId = globalThis.__current_request_id__;
+    if (globalThis.__substore_request_caches__ && requestId !== undefined) {
+        const cache = globalThis.__substore_request_caches__.get(requestId) || {};
+        cache[key] = value;
+        globalThis.__substore_request_caches__.set(requestId, cache);
+    }
+}
+
+export class OpenAPI`
+                    );
+                }
+
+                // 替换 initCache 中对 this.cache 的赋值（跳过，因为我们在 substore.js 中初始化）
+                contents = contents.replace(
+                    /this\.cache\s*=\s*JSON\.parse\s*\(\s*\$persistentStore\.read\s*\(\s*this\.name\s*\)\s*\|\|\s*'{}'\s*\)/g,
+                    'this.cache = __getRequestCache__()'
+                );
+
+                // 替换 persistCache 中对 this.cache 的读取
+                contents = contents.replace(
+                    /const\s+data\s*=\s*JSON\.stringify\s*\(\s*this\.cache\s*,\s*null\s*,\s*2\s*\)/g,
+                    'const data = JSON.stringify(__getRequestCache__(), null, 2)'
+                );
+
+                // 替换 write 方法中对 this.cache[key] 的赋值
+                contents = contents.replace(
+                    /this\.cache\[key\]\s*=\s*data;/g,
+                    '__setRequestCache__(key, data);'
+                );
+
+                // 替换 read 方法中对 this.cache[key] 的读取
+                contents = contents.replace(
+                    /return\s+this\.cache\[key\];/g,
+                    'return __getRequestCache__()[key];'
+                );
+
+                // 替换 delete 方法中对 this.cache 的删除
+                contents = contents.replace(
+                    /delete\s+this\.cache\[key\];/g,
+                    'const __cache__ = __getRequestCache__(); delete __cache__[key];'
+                );
+            }
+
             if (contents !== code) {
                 return { code: contents, map: null };
             }
@@ -196,5 +257,14 @@ export default defineConfig({
     // 优化依赖预打包
     optimizeDeps: {
         include: ['react', 'react-dom', 'jose']
-    }
+    },
+    // 开发服务器配置
+    server: {
+        cors: {
+            origin: '*',
+            methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+            allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+            credentials: true,
+        },
+    },
 });

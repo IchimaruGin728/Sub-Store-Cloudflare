@@ -60,6 +60,15 @@ export async function executeSubStoreRequest(options) {
     globalThis.$persistentStore = userStorage;
     resetUserDataFlags();
 
+    // 初始化请求级别的缓存（解决并发请求数据竞争问题）
+    // 每个请求有独立的缓存，通过 requestContext 隔离
+    if (!globalThis.__substore_request_caches__) {
+        globalThis.__substore_request_caches__ = new Map();
+    }
+    // 从用户存储读取缓存数据
+    const cacheData = JSON.parse(userStorage.read('sub-store') || '{}');
+    globalThis.__substore_request_caches__.set(requestId, cacheData);
+
     // 创建响应 Promise
     const responsePromise = new Promise((resolve) => {
         if (useDoneCallback) {
@@ -96,12 +105,19 @@ export async function executeSubStoreRequest(options) {
     });
 
     // 初始化并执行 Sub-Store
+    // 设置当前请求 ID，供 OpenAPI 的缓存函数使用
+    globalThis.__current_request_id__ = requestId;
     const { initSubStore } = await import('./substore-loader.js');
     await initSubStore($request);
     debug(`[Workers] [${requestId}] Sub-Store 初始化完成`);
 
     // 等待响应
     const result = await responsePromise;
+
+    // 清理请求级缓存，防止内存泄漏
+    if (globalThis.__substore_request_caches__) {
+        globalThis.__substore_request_caches__.delete(requestId);
+    }
 
     return result;
 }
