@@ -8,8 +8,15 @@ import { debug, info } from '../utils/logger.js';
 /**
  * 创建用户专属的存储实例
  * 使用用户的 data 字段作为存储
+ * 
+ * Surge $persistentStore API:
+ * - read([key]) 返回 string 或 null
+ * - write(data<String>, [key]) 返回 bool，仅支持 string
  */
 export function createUserStorage(user) {
+    // 默认存储键（当不传入 key 时使用）
+    const DEFAULT_KEY = '__default__';
+
     // 解析用户的 data JSON
     let userData = {};
     try {
@@ -20,24 +27,49 @@ export function createUserStorage(user) {
 
     // 创建用户专属的 persistentStore
     return {
+        /**
+         * 读取数据
+         * @param {string} [key] - 存储键，不传时使用默认键
+         * @returns {string|null} - 返回字符串或 null
+         */
         read: (key) => {
-            const value = userData[key];
-            return value !== undefined ? value : null;
+            const storageKey = key || DEFAULT_KEY;
+            const value = userData[storageKey];
+            // 确保返回 string 或 null
+            if (value === undefined || value === null) {
+                return null;
+            }
+            // 如果存储的是对象，转换为 JSON 字符串（兼容旧数据）
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+            return String(value);
         },
+
+        /**
+         * 写入数据
+         * @param {string} data - 要存储的数据（必须是字符串）
+         * @param {string} [key] - 存储键，不传时使用默认键
+         * @returns {boolean} - 是否成功
+         */
         write: (data, key) => {
-            userData[key] = data;
+            const storageKey = key || DEFAULT_KEY;
+            // 存储原始字符串（不做 JSON 解析，因为调用方负责序列化）
+            userData[storageKey] = data;
+
             // 标记需要保存
             globalThis.__user_data_dirty__ = true;
             globalThis.__user_data__ = userData;
 
-            // 检测备份恢复：当写入 'sub-store' 时（OpenAPI 会去掉 # 前缀），需要重新初始化
-            if (key === 'sub-store') {
+            // 检测备份恢复：当写入 'sub-store' 时，需要重新初始化
+            if (storageKey === 'sub-store') {
                 debug('[Workers] 检测到备份恢复，标记需要重新初始化');
                 globalThis.__need_reinit__ = true;
             }
 
             return true;
         },
+
         // 获取当前数据（用于保存）
         getData: () => userData,
     };
