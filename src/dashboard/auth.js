@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { getUserById } from './user.js';
-import { getSetting } from './settings.js';
+import { getSystemSettings } from './settings.js';
 
 function getSecretKey(env) {
     const envSecret = env?.JWT_SECRET;
@@ -80,6 +80,7 @@ export async function authenticateRequest(request, db, env) {
  * @returns {Promise<number>} 过期时间（小时）
  */
 export async function getTokenExpiryHours(db) {
-    const expiry = await getSetting(db, 'tokenExpiryHours');
+    const settings = await getSystemSettings(db);
+    const expiry = settings?.tokenExpiryHours;
     return expiry ? parseInt(expiry, 10) : DEFAULT_TOKEN_EXPIRY_HOURS;
 }

@@ -4,6 +4,10 @@
 
 import { defaultSettings } from './settings-defaults.js';
 
+const SETTINGS_CACHE_TTL_MS = 30000;
+let settingsCache = null;
+let settingsCacheAt = 0;
+
 /**
  * 获取系统设置
  * 如果数据库中没有某个 key，则从 defaultSettings 获取并自动保存
@@ -11,6 +15,10 @@ import { defaultSettings } from './settings-defaults.js';
  * @returns {Promise<object>}
  */
 export async function getSystemSettings(db) {
+    if (settingsCache && Date.now() - settingsCacheAt < SETTINGS_CACHE_TTL_MS) {
+        return settingsCache;
+    }
+
     const result = await db.prepare('SELECT settings FROM system_settings WHERE id = 1').first();
     let dbSettings = {};
 
@@ -45,6 +53,8 @@ export async function getSystemSettings(db) {
         await updateSystemSettings(db, merged);
     }
 
+    settingsCache = merged;
+    settingsCacheAt = Date.now();
     return merged;
 }
 
@@ -70,4 +80,6 @@ export async function updateSystemSettings(db, settings) {
     await db.prepare(
         'INSERT OR REPLACE INTO system_settings (id, settings, updated_at) VALUES (1, ?, ?)'
     ).bind(json, now).run();
+    settingsCache = settings;
+    settingsCacheAt = Date.now();
 }

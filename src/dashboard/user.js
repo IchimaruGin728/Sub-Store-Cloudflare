@@ -2,6 +2,32 @@
  * User Model & Database Operations (Multi-Tenant)
  */
 
+const USER_CACHE_TTL_MS = 10000;
+const userCacheById = new Map();
+const userCacheByPath = new Map();
+const userCacheByUsername = new Map();
+
+function getCached(cache, key) {
+    const cached = cache.get(key);
+    if (!cached) return null;
+    if (Date.now() - cached.at > USER_CACHE_TTL_MS) {
+        cache.delete(key);
+        return null;
+    }
+    return cached.value;
+}
+
+function setCached(cache, key, value) {
+    if (!key) return;
+    cache.set(key, { value, at: Date.now() });
+}
+
+function clearUserCache() {
+    userCacheById.clear();
+    userCacheByPath.clear();
+    userCacheByUsername.clear();
+}
+
 /**
  * 生成随机路径 (16位大小写字母+数字)
  * @returns {string}
@@ -19,7 +45,15 @@ export function generatePath() {
  * @param {string} username 
  */
 export async function getUser(db, username) {
-    return await db.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+    const cached = getCached(userCacheByUsername, username);
+    if (cached) return cached;
+    const user = await db.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+    if (user) {
+        setCached(userCacheByUsername, username, user);
+        setCached(userCacheById, user.id, user);
+        setCached(userCacheByPath, user.path, user);
+    }
+    return user;
 }
 
 /**
@@ -28,7 +62,15 @@ export async function getUser(db, username) {
  * @param {number} id 
  */
 export async function getUserById(db, id) {
-    return await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+    const cached = getCached(userCacheById, id);
+    if (cached) return cached;
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+    if (user) {
+        setCached(userCacheById, id, user);
+        setCached(userCacheByUsername, user.username, user);
+        setCached(userCacheByPath, user.path, user);
+    }
+    return user;
 }
 
 /**
@@ -37,7 +79,15 @@ export async function getUserById(db, id) {
  * @param {string} path 
  */
 export async function getUserByPath(db, path) {
-    return await db.prepare('SELECT * FROM users WHERE path = ?').bind(path).first();
+    const cached = getCached(userCacheByPath, path);
+    if (cached) return cached;
+    const user = await db.prepare('SELECT * FROM users WHERE path = ?').bind(path).first();
+    if (user) {
+        setCached(userCacheByPath, path, user);
+        setCached(userCacheById, user.id, user);
+        setCached(userCacheByUsername, user.username, user);
+    }
+    return user;
 }
 
 /**
@@ -49,9 +99,11 @@ export async function getUserByPath(db, path) {
  */
 export async function createUser(db, username, passwordHash, role = 'user') {
     const path = generatePath();
-    return await db.prepare(
+    const result = await db.prepare(
         'INSERT INTO users (username, password_hash, role, path) VALUES (?, ?, ?, ?)'
     ).bind(username, passwordHash, role, path).run();
+    clearUserCache();
+    return result;
 }
 
 /**
@@ -61,9 +113,11 @@ export async function createUser(db, username, passwordHash, role = 'user') {
  * @param {object} data JSON object
  */
 export async function updateUserData(db, id, data) {
-    return await db.prepare(
+    const result = await db.prepare(
         'UPDATE users SET data = ?, updated_at = ? WHERE id = ?'
     ).bind(JSON.stringify(data), Date.now(), id).run();
+    clearUserCache();
+    return result;
 }
 
 /**
@@ -73,9 +127,11 @@ export async function updateUserData(db, id, data) {
  * @param {string} newUsername 
  */
 export async function updateUsername(db, id, newUsername) {
-    return await db.prepare(
+    const result = await db.prepare(
         'UPDATE users SET username = ?, updated_at = ? WHERE id = ?'
     ).bind(newUsername, Date.now(), id).run();
+    clearUserCache();
+    return result;
 }
 
 /**
@@ -85,9 +141,11 @@ export async function updateUsername(db, id, newUsername) {
  * @param {string} newPath 
  */
 export async function updatePath(db, id, newPath) {
-    return await db.prepare(
+    const result = await db.prepare(
         'UPDATE users SET path = ?, updated_at = ? WHERE id = ?'
     ).bind(newPath, Date.now(), id).run();
+    clearUserCache();
+    return result;
 }
 
 /**
@@ -119,7 +177,9 @@ export async function listUsers(db) {
  * @param {number} id 
  */
 export async function deleteUser(db, id) {
-    return await db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+    const result = await db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+    clearUserCache();
+    return result;
 }
 
 /**
@@ -129,9 +189,11 @@ export async function deleteUser(db, id) {
  * @param {string} notes 
  */
 export async function updateNotes(db, id, notes) {
-    return await db.prepare(
+    const result = await db.prepare(
         'UPDATE users SET notes = ?, updated_at = ? WHERE id = ?'
     ).bind(notes, Date.now(), id).run();
+    clearUserCache();
+    return result;
 }
 
 /**
@@ -142,7 +204,9 @@ export async function updateNotes(db, id, notes) {
  * @param {string} passwordHash 
  */
 export async function updatePassword(db, id, passwordHash) {
-    return await db.prepare(
+    const result = await db.prepare(
         'UPDATE users SET password_hash = ?, token_version = token_version + 1, updated_at = ? WHERE id = ?'
     ).bind(passwordHash, Date.now(), id).run();
+    clearUserCache();
+    return result;
 }
