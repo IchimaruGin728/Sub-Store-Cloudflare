@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   path TEXT UNIQUE NOT NULL, -- 用户专属访问路径 (自动生成，管理员可改)
   data TEXT DEFAULT '{}',    -- 用户的 Sub-Store 完整配置 (JSON)
   notes TEXT DEFAULT '',     -- 管理员备注 (仅管理员可见)
+  token_version INTEGER DEFAULT 0, -- Token 版本号，改密码时 +1 使旧 Token 失效
   created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
   updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
 );

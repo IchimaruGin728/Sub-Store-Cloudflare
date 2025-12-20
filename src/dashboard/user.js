@@ -136,11 +136,13 @@ export async function updateNotes(db, id, notes) {
 
 /**
  * 更新用户密码 (by id)
+ * 同时递增 token_version，使所有旧 Token 失效
  * @param {D1Database} db 
  * @param {number} id 
  * @param {string} passwordHash 
  */
 export async function updatePassword(db, id, passwordHash) {
-    return await db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
-        .bind(passwordHash, Date.now(), id).run();
+    return await db.prepare(
+        'UPDATE users SET password_hash = ?, token_version = token_version + 1, updated_at = ? WHERE id = ?'
+    ).bind(passwordHash, Date.now(), id).run();
 }

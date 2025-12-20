@@ -106,6 +106,24 @@ const SystemSettings = ({ onBack }) => {
                             </p>
                         </div>
 
+                        {/* Token Expiry */}
+                        <div>
+                            <label className="block text-white text-sm font-medium mb-2">
+                                登录有效期（小时）
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="8760"
+                                value={settings.tokenExpiryHours || 168}
+                                onChange={e => updateSetting('tokenExpiryHours', parseInt(e.target.value) || 168)}
+                                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                            />
+                            <p className="text-gray-500 text-xs mt-2">
+                                用户登录后 Token 的有效时长，默认 168 小时（7 天），最大 8760 小时（1 年）
+                            </p>
+                        </div>
+
                         {/* 保存按钮 */}
                         <button
                             onClick={handleSave}

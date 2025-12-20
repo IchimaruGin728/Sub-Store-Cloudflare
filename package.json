@@ -12,7 +12,9 @@
         "tail": "npx wrangler tail --format=pretty",
         "db:create": "npx wrangler d1 create sub-store-db",
         "db:init": "npx wrangler d1 execute sub-store-db --remote --file=./schema.sql",
-        "db:init:local": "npx wrangler d1 execute sub-store-db --local --file=./schema.sql"
+        "db:init:local": "npx wrangler d1 execute sub-store-db --local --file=./schema.sql",
+        "db:migrate:local": "bash ./scripts/migrate.sh --local",
+        "db:migrate:remote": "bash ./scripts/migrate.sh --remote"
     },
     "devDependencies": {
         "@cloudflare/vite-plugin": "^1.18.0",

@@ -1,4 +1,4 @@
-import { signToken, authenticateRequest } from './auth.js';
+import { signToken, authenticateRequest, getTokenExpiryHours } from './auth.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { getUser, getUserByPath, getUserById, createUser, updateUserData, updateUsername, updatePath, listUsers, deleteUser, updatePassword, updateNotes, generatePath } from './user.js';
 import { createCaptcha, verifyCaptcha } from './captcha.js';
@@ -117,14 +117,21 @@ export async function handleDashboardRequest(request, env) {
                 return errorResponse('用户名或密码错误', 401);
             }
 
-            const token = await signToken({ id: user.id, username: user.username, role: user.role });
+            // 获取可配置的 Token 过期时间
+            const expiryHours = await getTokenExpiryHours(db);
+            const token = await signToken({
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                tokenVersion: user.token_version || 0
+            }, expiryHours);
             const frontendUrl = await getSetting(db, 'frontendUrl');
             return jsonResponse({ token, role: user.role, path: user.path, frontendUrl });
         }
 
         // ===== Protected Routes =====
 
-        const authPayload = await authenticateRequest(request);
+        const authPayload = await authenticateRequest(request, db);
         if (!authPayload) {
             return errorResponse('Unauthorized', 401);
         }
