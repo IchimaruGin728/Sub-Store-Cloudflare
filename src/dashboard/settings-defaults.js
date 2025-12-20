@@ -6,4 +6,6 @@
 export const defaultSettings = {
     // Sub-Store 前端 URL
     frontendUrl: 'https://sub-store.vercel.app/',
+    // 登录 Token 过期时间（小时），默认 7 天
+    tokenExpiryHours: 168,
 };
