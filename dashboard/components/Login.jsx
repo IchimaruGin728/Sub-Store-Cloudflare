@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -11,6 +12,24 @@ const Login = () => {
     const [captchaSvg, setCaptchaSvg] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Turnstile 相关
+    const [captchaType, setCaptchaType] = useState('builtin');
+    const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
+    const [turnstileToken, setTurnstileToken] = useState('');
+    const turnstileRef = useRef(null);
+
+    // 加载公开设置
+    const loadPublicSettings = async () => {
+        try {
+            const res = await fetch('/api/dashboard/settings/public');
+            const data = await res.json();
+            setCaptchaType(data.captchaType || 'builtin');
+            setTurnstileSiteKey(data.turnstileSiteKey || '');
+        } catch (e) {
+            console.error('加载设置失败');
+        }
+    };
 
     // 加载验证码
     const loadCaptcha = async () => {
@@ -25,35 +44,63 @@ const Login = () => {
         }
     };
 
-    // 组件挂载时加载验证码
+    // 组件挂载时加载
     useEffect(() => {
+        loadPublicSettings();
         loadCaptcha();
     }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!captchaCode) {
-            setError('请输入验证码');
-            return;
+
+        // 验证
+        if (captchaType === 'turnstile') {
+            if (!turnstileToken) {
+                setError('请完成人机验证');
+                return;
+            }
+        } else {
+            if (!captchaCode) {
+                setError('请输入验证码');
+                return;
+            }
         }
+
         setLoading(true);
         setError('');
         try {
             const res = await fetch('/api/dashboard/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, captchaId, captchaCode })
+                body: JSON.stringify({
+                    username,
+                    password,
+                    captchaId,
+                    captchaCode,
+                    turnstileToken
+                })
             });
             const data = await res.json();
             if (res.ok) {
                 login(data.token, data.role, data.path, data.frontendUrl);
             } else {
                 setError(data.error || '登录失败');
-                loadCaptcha(); // 刷新验证码
+                if (captchaType === 'builtin') {
+                    loadCaptcha();
+                } else {
+                    // 重置 Turnstile 获取新 token
+                    setTurnstileToken('');
+                    turnstileRef.current?.reset();
+                }
             }
         } catch (err) {
             setError('网络错误，请重试');
-            loadCaptcha();
+            if (captchaType === 'builtin') {
+                loadCaptcha();
+            } else {
+                setTurnstileToken('');
+                turnstileRef.current?.reset();
+            }
         } finally {
             setLoading(false);
         }
@@ -106,27 +153,65 @@ const Login = () => {
                             placeholder="请输入密码"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">验证码</label>
-                        <div className="flex gap-3">
-                            <input
-                                type="text"
-                                value={captchaCode}
-                                onChange={e => setCaptchaCode(e.target.value.toUpperCase())}
-                                maxLength={4}
-                                className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all uppercase tracking-widest"
-                                placeholder="请输入验证码"
-                            />
-                            <div
-                                className="flex-shrink-0 bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center"
-                                style={{ width: '120px', height: '46px' }}
-                                onClick={loadCaptcha}
-                                title="点击刷新验证码"
-                                dangerouslySetInnerHTML={{ __html: captchaSvg }}
-                            />
+
+                    {/* 验证码区域 */}
+                    {captchaType === 'turnstile' && turnstileSiteKey ? (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">人机验证</label>
+                            <div className="flex justify-center p-4 bg-white/5 border border-white/10 rounded-xl">
+                                <Turnstile
+                                    ref={turnstileRef}
+                                    siteKey={turnstileSiteKey}
+                                    onSuccess={setTurnstileToken}
+                                    onError={() => setTurnstileToken('')}
+                                    onExpire={() => setTurnstileToken('')}
+                                    options={{
+                                        theme: 'dark',
+                                        size: 'flexible',
+                                    }}
+                                />
+                            </div>
+                            {turnstileToken ? (
+                                <p className="text-green-400 text-xs mt-2 text-center flex items-center justify-center gap-1">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    验证通过
+                                </p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => turnstileRef.current?.reset()}
+                                    className="w-full mt-2 text-gray-400 hover:text-white text-xs text-center transition-colors"
+                                >
+                                    点击重新验证
+                                </button>
+                            )}
                         </div>
-                        <p className="text-gray-500 text-xs mt-2">点击图片可刷新验证码</p>
-                    </div>
+                    ) : (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">验证码</label>
+                            <div className="flex gap-3">
+                                <input
+                                    type="text"
+                                    value={captchaCode}
+                                    onChange={e => setCaptchaCode(e.target.value.toUpperCase())}
+                                    maxLength={4}
+                                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all uppercase tracking-widest"
+                                    placeholder="请输入验证码"
+                                />
+                                <div
+                                    className="flex-shrink-0 bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center"
+                                    style={{ width: '120px', height: '46px' }}
+                                    onClick={loadCaptcha}
+                                    title="点击刷新验证码"
+                                    dangerouslySetInnerHTML={{ __html: captchaSvg }}
+                                />
+                            </div>
+                            <p className="text-gray-500 text-xs mt-2">点击图片可刷新验证码</p>
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         disabled={loading}

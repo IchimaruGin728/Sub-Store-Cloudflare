@@ -10,4 +10,9 @@ export const defaultSettings = {
     tokenExpiryHours: 168,
     // 在用户列表中显示用户路径
     showUserPath: true,
+    // 验证码类型: 'builtin' | 'turnstile'
+    captchaType: 'builtin',
+    // Turnstile 配置（仅当 captchaType = 'turnstile' 时使用）
+    turnstileSiteKey: '',
+    turnstileSecretKey: '',
 };

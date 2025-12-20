@@ -11,6 +11,7 @@ import { corsHeaders, errorResponse } from './utils/response.js';
 import { handlePublicRoutes } from './routes/public.js';
 import { handleUserRoutes } from './routes/user.js';
 import { handleAdminRoutes } from './routes/admin.js';
+import { error as logError } from '../utils/logger.js';
 
 /**
  * Handle Dashboard API Requests
@@ -73,7 +74,7 @@ export async function handleDashboardRequest(request, env) {
         return errorResponse('Not Found', 404);
 
     } catch (err) {
-        console.error('Dashboard Error:', err);
+        logError('[Dashboard]', err);
         return errorResponse(err.message, 500);
     }
 }

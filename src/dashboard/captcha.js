@@ -2,6 +2,7 @@
  * SVG 验证码生成器
  * 使用 D1 数据库存储，支持分布式环境
  */
+import { error as logError } from '../utils/logger.js';
 
 // 验证码配置
 const CAPTCHA_LENGTH = 4;
@@ -156,7 +157,7 @@ export async function verifyCaptcha(db, id, input) {
 
         return isValid;
     } catch (e) {
-        console.error('Captcha verification error:', e);
+        logError('[Captcha] Verification error:', e);
         return false;
     }
 }

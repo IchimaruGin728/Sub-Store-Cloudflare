@@ -142,6 +142,66 @@ const SystemSettings = () => {
                             </button>
                         </div>
 
+                        {/* Captcha Type */}
+                        <div>
+                            <label className="block text-white text-sm font-medium mb-2">
+                                验证码类型
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => updateSetting('captchaType', 'builtin')}
+                                    className={`flex-1 py-3 rounded-xl transition-colors text-sm ${(settings.captchaType || 'builtin') === 'builtin'
+                                        ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+                                        : 'bg-slate-700 text-gray-400 hover:bg-slate-600'
+                                        }`}
+                                >
+                                    内置验证码
+                                </button>
+                                <button
+                                    onClick={() => updateSetting('captchaType', 'turnstile')}
+                                    className={`flex-1 py-3 rounded-xl transition-colors text-sm ${settings.captchaType === 'turnstile'
+                                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
+                                        : 'bg-slate-700 text-gray-400 hover:bg-slate-600'
+                                        }`}
+                                >
+                                    Cloudflare Turnstile
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Turnstile Config */}
+                        {settings.captchaType === 'turnstile' && (
+                            <div className="space-y-4 p-4 bg-slate-700/30 rounded-xl">
+                                <div>
+                                    <label className="block text-white text-sm font-medium mb-2">
+                                        Site Key
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={settings.turnstileSiteKey || ''}
+                                        onChange={e => updateSetting('turnstileSiteKey', e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 font-mono text-sm"
+                                        placeholder="0x..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-white text-sm font-medium mb-2">
+                                        Secret Key
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={settings.turnstileSecretKey || ''}
+                                        onChange={e => updateSetting('turnstileSecretKey', e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 font-mono text-sm"
+                                        placeholder="0x..."
+                                    />
+                                </div>
+                                <p className="text-gray-500 text-xs">
+                                    在 <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener" className="text-orange-400 hover:underline">Cloudflare Dashboard</a> 创建 Turnstile 站点获取密钥
+                                </p>
+                            </div>
+                        )}
+
                         {/* 保存按钮 */}
                         <button
                             onClick={handleSave}
