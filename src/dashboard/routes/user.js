@@ -7,7 +7,7 @@
  */
 import { jsonResponse, errorResponse, okResponse } from '../utils/response.js';
 import { hashPassword } from '../password.js';
-import { getSetting } from '../settings.js';
+import { getSystemSettings } from '../settings.js';
 import { getUserById, getUser, updateUserData, updatePassword, updateUsername, updatePath, generatePath } from '../user.js';
 
 /**
@@ -51,7 +51,8 @@ export async function handleUserRoutes(request, env, authPayload) {
     // POST /api/dashboard/user/password
     if (path === '/api/dashboard/user/password' && method === 'POST') {
         const { newPassword } = await request.json();
-        const passwordMinLength = parseInt(await getSetting(db, 'passwordMinLength') ?? 8, 10) || 8;
+        const settings = await getSystemSettings(db);
+        const passwordMinLength = parseInt(settings?.passwordMinLength ?? 8, 10) || 8;
         if (!newPassword || newPassword.length < passwordMinLength) {
             return errorResponse(`密码长度至少为${passwordMinLength}位`, 400);
         }

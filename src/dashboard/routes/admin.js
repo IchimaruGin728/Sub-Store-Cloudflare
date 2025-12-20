@@ -9,7 +9,7 @@ import {
     getUser, getUserById, getUserByPath, listUsers, createUser, deleteUser,
     updateUserData, updatePassword, updateUsername, updatePath, updateNotes, generatePath
 } from '../user.js';
-import { getSystemSettings, updateSystemSettings, getSetting } from '../settings.js';
+import { getSystemSettings, updateSystemSettings } from '../settings.js';
 
 /**
  * 解析 /api/dashboard/admin/user/:id/:action? 路由
@@ -64,7 +64,8 @@ export async function handleAdminRoutes(request, env, authPayload) {
     // POST /api/dashboard/admin/user/create
     if (path === '/api/dashboard/admin/user/create' && method === 'POST') {
         const { username, password, role } = await request.json();
-        const passwordMinLength = parseInt(await getSetting(db, 'passwordMinLength') ?? 8, 10) || 8;
+        const settings = await getSystemSettings(db);
+        const passwordMinLength = parseInt(settings?.passwordMinLength ?? 8, 10) || 8;
         if (!username || !password) {
             return errorResponse('用户名和密码不能为空', 400);
         }
@@ -94,6 +95,10 @@ export async function handleAdminRoutes(request, env, authPayload) {
     if (path === '/api/dashboard/admin/settings' && method === 'POST') {
         const newSettings = await request.json();
         await updateSystemSettings(db, newSettings);
+        const cacheKey = new Request(new URL('/api/dashboard/settings/public', request.url).toString(), {
+            method: 'GET'
+        });
+        await caches.default.delete(cacheKey);
         return okResponse();
     }
 
@@ -128,7 +133,8 @@ export async function handleAdminRoutes(request, env, authPayload) {
         // POST /api/dashboard/admin/user/:id/password
         if (action === 'password' && method === 'POST') {
             const { newPassword } = await request.json();
-            const passwordMinLength = parseInt(await getSetting(db, 'passwordMinLength') ?? 8, 10) || 8;
+            const settings = await getSystemSettings(db);
+            const passwordMinLength = parseInt(settings?.passwordMinLength ?? 8, 10) || 8;
             if (!newPassword || newPassword.length < passwordMinLength) {
                 return errorResponse(`密码长度至少为${passwordMinLength}位`, 400);
             }

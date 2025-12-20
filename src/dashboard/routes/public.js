@@ -9,7 +9,7 @@ import { signToken, getTokenExpiryHours } from '../auth.js';
 import { hashPassword, verifyPassword } from '../password.js';
 import { createCaptcha, verifyCaptcha } from '../captcha.js';
 import { getUser, createUser } from '../user.js';
-import { getSetting } from '../settings.js';
+import { getSystemSettings } from '../settings.js';
 import { debug, error as logError } from '../../utils/logger.js';
 
 /**
@@ -50,13 +50,27 @@ export async function handlePublicRoutes(request, env) {
 
     // GET /api/dashboard/settings/public - 公开设置
     if (path === '/api/dashboard/settings/public' && method === 'GET') {
-        const frontendUrl = await getSetting(db, 'frontendUrl');
-        const captchaType = await getSetting(db, 'captchaType') || 'builtin';
+        const cache = caches.default;
+        const cacheKey = new Request(request.url, { method: 'GET' });
+        const cached = await cache.match(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        const settings = await getSystemSettings(db);
+        const captchaType = settings.captchaType || 'builtin';
         const turnstileSiteKey = captchaType === 'turnstile'
-            ? await getSetting(db, 'turnstileSiteKey')
+            ? settings.turnstileSiteKey
             : '';
-        const passwordMinLength = await getSetting(db, 'passwordMinLength');
-        return jsonResponse({ frontendUrl, captchaType, turnstileSiteKey, passwordMinLength });
+        const response = jsonResponse({
+            frontendUrl: settings.frontendUrl,
+            captchaType,
+            turnstileSiteKey,
+            passwordMinLength: settings.passwordMinLength,
+        });
+        response.headers.set('Cache-Control', 'public, max-age=60');
+        await cache.put(cacheKey, response.clone());
+        return response;
     }
 
     // POST /api/dashboard/auth/login
@@ -65,11 +79,12 @@ export async function handlePublicRoutes(request, env) {
         const { username, password, captchaId, captchaCode, turnstileToken } = body;
 
         // 根据配置选择验证方式
-        let captchaType = await getSetting(db, 'captchaType') || 'builtin';
+        const settings = await getSystemSettings(db);
+        let captchaType = settings.captchaType || 'builtin';
 
         if (captchaType === 'turnstile') {
             // Turnstile 验证
-            const secretKey = await getSetting(db, 'turnstileSecretKey');
+            const secretKey = settings.turnstileSecretKey;
             if (!secretKey) {
                 return errorResponse('人机验证未配置');
             }
@@ -116,7 +131,7 @@ export async function handlePublicRoutes(request, env) {
             role: user.role,
             tokenVersion: user.token_version || 0
         }, expiryHours, env);
-        const frontendUrl = await getSetting(db, 'frontendUrl');
+        const frontendUrl = settings.frontendUrl;
         return jsonResponse({
             token,
             role: user.role,
