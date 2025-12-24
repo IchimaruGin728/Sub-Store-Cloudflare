@@ -48,7 +48,7 @@ export async function verifyToken(token, env) {
 /**
  * 验证中间件逻辑（包含 Token 版本检查）
  * @param {Request} request 
- * @param {D1Database} db - 数据库实例，用于验证 tokenVersion
+ * @param {DB} db - 数据库实例，用于验证 tokenVersion
  * @returns {Promise<object|null>} user payload
  */
 export async function authenticateRequest(request, db, env) {
@@ -76,7 +76,7 @@ export async function authenticateRequest(request, db, env) {
 
 /**
  * 获取系统配置的 Token 过期时间
- * @param {D1Database} db 
+ * @param {DB} db 
  * @returns {Promise<number>} 过期时间（小时）
  */
 export async function getTokenExpiryHours(db) {

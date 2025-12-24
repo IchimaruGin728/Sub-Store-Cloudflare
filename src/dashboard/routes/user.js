@@ -31,14 +31,8 @@ export async function handleUserRoutes(request, env, authPayload) {
     // GET /api/dashboard/user/me
     if (path === '/api/dashboard/user/me' && method === 'GET') {
         const user = await getUserById(db, authPayload.id);
-        // 从 data['sub-store'].settings.avatarUrl 提取头像
-        let avatarUrl = '';
-        try {
-            const userData = JSON.parse(user.data || '{}');
-            const subStoreData = JSON.parse(userData['sub-store'] || '{}');
-            avatarUrl = subStoreData.settings?.avatarUrl || '';
-        } catch (e) { }
-        return jsonResponse({ ...user, avatarUrl });
+        const avatarUrl = user?.avatar_url || user?.avatarUrl || '';
+        return jsonResponse({ ...user, avatarUrl, avatar_url: undefined });
     }
 
     // POST /api/dashboard/user/me

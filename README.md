@@ -8,7 +8,7 @@
 
 ## 特性
 
-- ✅ 使用 D1 数据库持久化存储
+- ✅ 使用 Durable Objects (SQLite) 持久化存储
 - ✅ Cron Triggers 定时同步
 - ✅ 不修改 Sub-Store 源代码
 - ✅ GitHub Actions 自动部署（前后端）
@@ -26,7 +26,7 @@
 - **脚本**：不可用
 - **GeoIP**: 不可用，由于脚本不可用，所以也没有实现的必要
 - **代理请求**: 不可用，但也不需要
-- **推送通知**: shoutrrr 不可用，可以使用其他方式 Brak、Pushover
+- **推送通知**: shoutrrr 不可用，可以使用其他方式 Bark、Pushover
 
 ---
 
@@ -43,18 +43,7 @@
 
 点击 GitHub 页面右上角的 **Fork** 按钮，将仓库复制到你的账号。
 
-### 第二步：创建 D1 数据库
-
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. 左侧菜单选择 **Workers & Pages** → **D1**
-3. 点击 **Create database**
-4. 输入名称 `sub-store-db`，点击 **Create**
-5. **复制显示的 Database ID**（类似 `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`）
-
-> [!TIP]
-> 数据库表会在首次部署时自动创建，无需手动初始化。
-
-### 第三步：创建 Cloudflare Pages 项目（前端）
+### 第二步：创建 Cloudflare Pages 项目（前端）
 
 如果你想直接使用官方前端，可以跳过此步骤，并且后面的 GitHub Secrets 中的 `DEPLOY_SUB_STORE_FRONTEND` 也无需设置。
 
@@ -63,22 +52,21 @@
 3. 项目名称填 `sub-store-frontend`
 4. 随便上传一个文件完成创建（后续会自动部署）
 
-### 第四步：获取 Cloudflare API Token
+### 第三步：获取 Cloudflare API Token
 
 1. 访问 [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)
 2. 点击 **Create Token**
 3. 选择 **Custom token**，配置权限：
    - Account → Workers Scripts → Edit
-   - Account → D1 → Edit
    - Account → Cloudflare Pages → Edit
 4. 创建并**复制 Token**
 
-### 第五步：获取 Account ID
+### 第四步：获取 Account ID
 
 1. 打开 [Cloudflare Dashboard](https://dash.cloudflare.com)
 2. 右侧会显示 **Account ID**，复制它
 
-### 第六步：配置 GitHub Secrets
+### 第五步：配置 GitHub Secrets
 
 在你 Fork 的仓库中：
 
@@ -89,11 +77,10 @@
 |-------------|------|------|
 | `CF_API_TOKEN` | Cloudflare API Token | `xxxxxxxxx` |
 | `CF_ACCOUNT_ID` | Cloudflare Account ID | `xxxxxxxxx` |
-| `D1_DATABASE_ID` | D1 数据库 ID | `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` |
 | `JWT_SECRET` | JWT 签名密钥（必填，建议 32 位以上随机字符串） | `your-long-random-secret` |
 | `DEPLOY_SUB_STORE_FRONTEND` | 是否部署 Sub-Store 前端 (可选，任意值为部署，不设置该变量则不部署前端) | `true` |
 
-### 第七步：触发部署
+### 第六步：触发部署
 
 1. 点击仓库的 **Actions** 标签
 2. 选择 **Deploy to Cloudflare**
@@ -146,9 +133,6 @@
 # 安装依赖
 bun install
 
-# 初始化本地数据库
-bun run db:init:local
-
 # 启动开发服务器
 bun run dev
 
@@ -167,9 +151,6 @@ bun run preview
 |------|------|
 | `bun run build` | 构建 |
 | `bun run dev` | 本地开发服务器 |
-| `bun run db:create` | 创建数据库 |
-| `bun run db:init:local` | 初始化本地数据库 |
-| `bun run db:init:remote` | 初始化远程数据库 |
 | `bun run deploy:local` | 从本地部署到 Cloudflare |
 | `bun run deploy:action` | 从 GitHub Actions 部署到 Cloudflare |
 | `bun run tail` | 实时查看 Cloudflare Worker 生产环境的日志 |
@@ -177,10 +158,6 @@ bun run preview
 ---
 
 ## 故障排除
-
-### 数据库错误
-
-数据库表会在首次部署时自动创建。如果仍然报错，可以在 D1 Console 手动执行 `schema.sql` 的内容。
 
 ### 订阅下载超时
 

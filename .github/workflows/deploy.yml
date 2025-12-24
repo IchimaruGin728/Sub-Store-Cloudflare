@@ -37,6 +37,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
       - name: Restore version cache
         uses: actions/cache/restore@v4
         with:
@@ -120,7 +125,6 @@ jobs:
         run: |
           cd build
           cp wrangler.toml.example wrangler.toml
-          sed -i 's|__D1_DATABASE_ID__|${{ secrets.D1_DATABASE_ID }}|g' wrangler.toml
           sed -i 's|__JWT_SECRET__|${{ secrets.JWT_SECRET }}|g' wrangler.toml
 
       - name: Setup Bun
@@ -154,24 +158,6 @@ jobs:
           bun run deploy:action
           echo "Deploy completed"
 
-      - name: Initialize D1 Database (safe - uses IF NOT EXISTS)
-        continue-on-error: true
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: build
-          command: d1 execute sub-store-db --remote --file=./schema.sql
-
-      - name: Run Database Migrations
-        working-directory: build
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-        run: |
-          chmod +x ./scripts/migrate.sh
-          bun run db:migrate:remote
-
   deploy-frontend:
     needs: check-updates
     if: needs.check-updates.outputs.should_deploy == 'true' && needs.check-updates.outputs.deploy_frontend == 'true'
@@ -196,7 +182,7 @@ jobs:
 
   update-version-cache:
     needs: [check-updates, deploy-backend, deploy-frontend]
-    if: always() && needs.check-updates.outputs.should_deploy == 'true' && needs.deploy-backend.result == 'success'
+    if: always() && needs.check-updates.outputs.should_deploy == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-frontend.result == 'success')
     runs-on: ubuntu-latest
 
     steps:

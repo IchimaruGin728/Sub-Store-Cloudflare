@@ -3,6 +3,7 @@
  */
 
 import { defaultSettings } from './settings-defaults.js';
+import { getSystemSettingsRow, upsertSystemSettings } from './repos/settingsRepo.js';
 
 const SETTINGS_CACHE_TTL_MS = 30000;
 let settingsCache = null;
@@ -11,7 +12,7 @@ let settingsCacheAt = 0;
 /**
  * 获取系统设置
  * 如果数据库中没有某个 key，则从 defaultSettings 获取并自动保存
- * @param {D1Database} db 
+ * @param {DB} db 
  * @returns {Promise<object>}
  */
 export async function getSystemSettings(db) {
@@ -19,7 +20,7 @@ export async function getSystemSettings(db) {
         return settingsCache;
     }
 
-    const result = await db.prepare('SELECT settings FROM system_settings WHERE id = 1').first();
+    const result = await getSystemSettingsRow(db);
     let dbSettings = {};
 
     try {
@@ -60,7 +61,7 @@ export async function getSystemSettings(db) {
 
 /**
  * 获取单个设置项
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {string} key 
  * @returns {Promise<any>}
  */
@@ -71,15 +72,13 @@ export async function getSetting(db, key) {
 
 /**
  * 更新系统设置
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {object} settings 
  */
 export async function updateSystemSettings(db, settings) {
     const json = JSON.stringify(settings);
     const now = Date.now();
-    await db.prepare(
-        'INSERT OR REPLACE INTO system_settings (id, settings, updated_at) VALUES (1, ?, ?)'
-    ).bind(json, now).run();
+    await upsertSystemSettings(db, json, now);
     settingsCache = settings;
     settingsCacheAt = Date.now();
 }

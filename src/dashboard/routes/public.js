@@ -11,6 +11,7 @@ import { createCaptcha, verifyCaptcha } from '../captcha.js';
 import { getUser, createUser } from '../user.js';
 import { getSystemSettings } from '../settings.js';
 import { debug, error as logError } from '../../utils/logger.js';
+import { countUsers } from '../repos/userRepo.js';
 
 /**
  * 验证 Cloudflare Turnstile token
@@ -108,8 +109,8 @@ export async function handlePublicRoutes(request, env) {
 
         // First time init: if no users, create admin
         if (!user && username === 'admin') {
-            const countResult = await db.prepare('SELECT COUNT(*) as count FROM users').first();
-            if (countResult.count === 0) {
+            const count = await countUsers(db);
+            if (count === 0) {
                 const hashedPassword = await hashPassword('admin');
                 await createUser(db, 'admin', hashedPassword, 'admin');
                 user = await getUser(db, 'admin');

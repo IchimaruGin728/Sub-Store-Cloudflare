@@ -160,8 +160,11 @@ export async function handleSubStoreHttpRequest(options) {
                 useDoneCallback: true,
             });
 
-            // 保存用户数据
-            ctx.waitUntil(saveUserData(env.DB, user.id));
+            // 保存用户数据（允许通过 env.__saveUserData 覆盖持久化方式）
+            const saveFn = env.__saveUserData
+                ? () => env.__saveUserData(user.id)
+                : () => saveUserData(env.DB, user.id);
+            ctx.waitUntil(saveFn());
 
             return buildResponse(result);
         } catch (err) {
@@ -215,8 +218,12 @@ export async function handleSubStoreCronRequest(options) {
             },
         });
 
-        // 保存用户数据
-        await saveUserData(env.DB, user.id);
+        // 保存用户数据（允许通过 env.__saveUserData 覆盖持久化方式）
+        if (env.__saveUserData) {
+            await env.__saveUserData(user.id);
+        } else {
+            await saveUserData(env.DB, user.id);
+        }
         debug(`[Cron] 用户 ${user.username} 处理完成`);
     } catch (err) {
         error(`[Cron] 用户 ${user.username} 处理失败:`, err.message);

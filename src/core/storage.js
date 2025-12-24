@@ -81,8 +81,12 @@ export function createUserStorage(user) {
 export async function saveUserData(db, userId) {
     if (globalThis.__user_data_dirty__ && globalThis.__user_data__) {
         const data = JSON.stringify(globalThis.__user_data__);
-        await db.prepare('UPDATE users SET data = ?, updated_at = ? WHERE id = ?')
-            .bind(data, Date.now(), userId).run();
+        if (typeof db?.run === 'function') {
+            await db.run('UPDATE users SET data = ?, updated_at = ? WHERE id = ?', data, Date.now(), userId);
+        } else {
+            await db.prepare('UPDATE users SET data = ?, updated_at = ? WHERE id = ?')
+                .bind(data, Date.now(), userId).run();
+        }
         globalThis.__user_data_dirty__ = false;
         info(`[Workers] 用户数据已保存: userId=${userId}`);
     }

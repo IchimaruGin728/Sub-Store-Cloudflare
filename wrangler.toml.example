@@ -6,17 +6,23 @@ main = "src/index.js"
 compatibility_date = "2025-11-17"
 compatibility_flags = ["nodejs_compat"]
 
-# D1 数据库绑定
-# 本地开发: database_id 使用 "local-dev-database" 即可
-# 线上部署: 需要替换为实际的 D1 数据库 ID
-[[d1_databases]]
-binding = "DB"
-database_name = "sub-store-db"
-database_id = "__D1_DATABASE_ID__"
-
 # 环境变量
 [vars]
+DEBUG = false
 JWT_SECRET = "__JWT_SECRET__"
+
+# Durable Objects（SQLite）
+[[durable_objects.bindings]]
+name = "INDEX_DO"
+class_name = "IndexDO"
+
+[[durable_objects.bindings]]
+name = "USER_DO"
+class_name = "UserDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["IndexDO", "UserDO"]
 
 # Cron 触发器 - 每 6 小时执行一次
 [triggers]

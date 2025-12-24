@@ -1,8 +1,8 @@
 /**
  * SVG 验证码生成器
- * 使用 D1 数据库存储，支持分布式环境
  */
 import { error as logError } from '../utils/logger.js';
+import * as captchaRepo from './repos/captchaRepo.js';
 
 // 验证码配置
 const CAPTCHA_LENGTH = 4;
@@ -86,7 +86,7 @@ function generateCaptchaId() {
  */
 async function cleanExpired(db) {
     try {
-        await db.prepare('DELETE FROM captchas WHERE expires_at < ?').bind(Date.now()).run();
+        await captchaRepo.deleteExpiredCaptchas(db, Date.now());
     } catch (e) {
         // 忽略清理错误
     }
@@ -94,7 +94,7 @@ async function cleanExpired(db) {
 
 /**
  * 创建新验证码
- * @param {D1Database} db - D1 数据库实例
+ * @param {DB} db
  * @returns {Promise<{ id: string, svg: string }>}
  */
 export async function createCaptcha(db) {
@@ -106,16 +106,14 @@ export async function createCaptcha(db) {
     const svg = generateSVG(code);
     const expiresAt = Date.now() + CAPTCHA_EXPIRES;
 
-    await db.prepare(
-        'INSERT INTO captchas (id, code, attempts, expires_at) VALUES (?, ?, 0, ?)'
-    ).bind(id, code.toUpperCase(), expiresAt).run();
+    await captchaRepo.insertCaptcha(db, id, code.toUpperCase(), expiresAt);
 
     return { id, svg };
 }
 
 /**
  * 验证验证码
- * @param {D1Database} db - D1 数据库实例
+ * @param {DB} db
  * @param {string} id 验证码 ID
  * @param {string} input 用户输入
  * @returns {Promise<boolean>}
@@ -124,35 +122,31 @@ export async function verifyCaptcha(db, id, input) {
     if (!id || !input) return false;
 
     try {
-        const result = await db.prepare(
-            'SELECT code, attempts, expires_at FROM captchas WHERE id = ?'
-        ).bind(id).first();
+        const result = await captchaRepo.getCaptchaForVerify(db, id);
 
         if (!result) return false;
 
         // 检查是否过期
         if (Date.now() > result.expires_at) {
-            await db.prepare('DELETE FROM captchas WHERE id = ?').bind(id).run();
+            await captchaRepo.deleteCaptcha(db, id);
             return false;
         }
 
         // 限制尝试次数
         if (result.attempts >= 3) {
-            await db.prepare('DELETE FROM captchas WHERE id = ?').bind(id).run();
+            await captchaRepo.deleteCaptcha(db, id);
             return false;
         }
 
         // 更新尝试次数
-        await db.prepare(
-            'UPDATE captchas SET attempts = attempts + 1 WHERE id = ?'
-        ).bind(id).run();
+        await captchaRepo.incrementCaptchaAttempts(db, id);
 
         // 验证（不区分大小写）
         const isValid = result.code === input.toUpperCase();
 
         // 验证成功后删除，防止重复使用
         if (isValid) {
-            await db.prepare('DELETE FROM captchas WHERE id = ?').bind(id).run();
+            await captchaRepo.deleteCaptcha(db, id);
         }
 
         return isValid;

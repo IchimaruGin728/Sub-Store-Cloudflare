@@ -2,6 +2,8 @@
  * User Model & Database Operations (Multi-Tenant)
  */
 
+import * as userRepo from './repos/userRepo.js';
+
 const USER_CACHE_TTL_MS = 10000;
 const userCacheById = new Map();
 const userCacheByPath = new Map();
@@ -41,14 +43,20 @@ export function generatePath() {
 
 /**
  * 获取用户信息 (by username)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {string} username 
  */
 export async function getUser(db, username) {
     const cached = getCached(userCacheByUsername, username);
     if (cached) return cached;
-    const user = await db.prepare('SELECT * FROM users WHERE username = ?').bind(username).first();
+    const user = await userRepo.getUserByUsername(db, username);
     if (user) {
+        if (db.userDataStore && user.id) {
+            const data = await db.userDataStore.get(user.id);
+            if (data !== null && data !== undefined) {
+                user.data = data;
+            }
+        }
         setCached(userCacheByUsername, username, user);
         setCached(userCacheById, user.id, user);
         setCached(userCacheByPath, user.path, user);
@@ -58,14 +66,20 @@ export async function getUser(db, username) {
 
 /**
  * 获取用户信息 (by id)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  */
 export async function getUserById(db, id) {
     const cached = getCached(userCacheById, id);
     if (cached) return cached;
-    const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+    const user = await userRepo.getUserById(db, id);
     if (user) {
+        if (db.userDataStore && user.id) {
+            const data = await db.userDataStore.get(user.id);
+            if (data !== null && data !== undefined) {
+                user.data = data;
+            }
+        }
         setCached(userCacheById, id, user);
         setCached(userCacheByUsername, user.username, user);
         setCached(userCacheByPath, user.path, user);
@@ -75,14 +89,20 @@ export async function getUserById(db, id) {
 
 /**
  * 获取用户信息 (by path)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {string} path 
  */
 export async function getUserByPath(db, path) {
     const cached = getCached(userCacheByPath, path);
     if (cached) return cached;
-    const user = await db.prepare('SELECT * FROM users WHERE path = ?').bind(path).first();
+    const user = await userRepo.getUserByPath(db, path);
     if (user) {
+        if (db.userDataStore && user.id) {
+            const data = await db.userDataStore.get(user.id);
+            if (data !== null && data !== undefined) {
+                user.data = data;
+            }
+        }
         setCached(userCacheByPath, path, user);
         setCached(userCacheById, user.id, user);
         setCached(userCacheByUsername, user.username, user);
@@ -92,106 +112,99 @@ export async function getUserByPath(db, path) {
 
 /**
  * 创建用户 (自动生成 path)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {string} username 
  * @param {string} passwordHash 
  * @param {string} role 
  */
 export async function createUser(db, username, passwordHash, role = 'user') {
     const path = generatePath();
-    const result = await db.prepare(
-        'INSERT INTO users (username, password_hash, role, path) VALUES (?, ?, ?, ?)'
-    ).bind(username, passwordHash, role, path).run();
+    const result = await userRepo.createUser(db, username, passwordHash, role, path);
     clearUserCache();
     return result;
 }
 
 /**
  * 更新用户数据 (by id)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  * @param {object} data JSON object
  */
 export async function updateUserData(db, id, data) {
-    const result = await db.prepare(
-        'UPDATE users SET data = ?, updated_at = ? WHERE id = ?'
-    ).bind(JSON.stringify(data), Date.now(), id).run();
+    if (db.userDataStore) {
+        const ok = await db.userDataStore.put(id, data);
+        clearUserCache();
+        return { success: !!ok };
+    }
+    const now = Date.now();
+    const result = await userRepo.updateUserDataInUsersTable(db, id, JSON.stringify(data), now);
     clearUserCache();
     return result;
 }
 
 /**
  * 更新用户名 (by id, admin only)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  * @param {string} newUsername 
  */
 export async function updateUsername(db, id, newUsername) {
-    const result = await db.prepare(
-        'UPDATE users SET username = ?, updated_at = ? WHERE id = ?'
-    ).bind(newUsername, Date.now(), id).run();
+    const now = Date.now();
+    const result = await userRepo.updateUsername(db, id, newUsername, now);
     clearUserCache();
     return result;
 }
 
 /**
  * 更新路径 (by id, admin only)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  * @param {string} newPath 
  */
 export async function updatePath(db, id, newPath) {
-    const result = await db.prepare(
-        'UPDATE users SET path = ?, updated_at = ? WHERE id = ?'
-    ).bind(newPath, Date.now(), id).run();
+    const now = Date.now();
+    const result = await userRepo.updatePath(db, id, newPath, now);
     clearUserCache();
     return result;
 }
 
 /**
  * 列出所有用户 (包含 notes 和 avatarUrl 字段供管理员查看)
- * @param {D1Database} db 
+ * @param {DB} db 
  */
 export async function listUsers(db) {
-    const result = await db.prepare('SELECT id, username, role, path, notes, data, created_at, updated_at FROM users').all();
-    // 从 data['sub-store'].settings.avatarUrl 提取头像
-    const users = result.results.map(user => {
-        let avatarUrl = '';
-        try {
-            const userData = JSON.parse(user.data || '{}');
-            const subStoreData = JSON.parse(userData['sub-store'] || '{}');
-            avatarUrl = subStoreData.settings?.avatarUrl || '';
-        } catch (e) { }
-        return {
-            ...user,
-            avatarUrl,
-            data: undefined // 不返回完整 data 给列表
-        };
-    });
+    const results = await userRepo.listUsersForAdmin(db);
+    const users = results.map(user => ({
+        ...user,
+        avatarUrl: user.avatar_url || '',
+        avatar_url: undefined,
+    }));
     return { results: users };
 }
 
 /**
  * 删除用户 (by id)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  */
 export async function deleteUser(db, id) {
-    const result = await db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+    if (db.userDataStore) {
+        await db.userDataStore.delete(id);
+    }
+    const result = await userRepo.deleteUser(db, id);
     clearUserCache();
     return result;
 }
 
 /**
  * 更新用户备注 (by id, admin only)
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  * @param {string} notes 
  */
 export async function updateNotes(db, id, notes) {
-    const result = await db.prepare(
-        'UPDATE users SET notes = ?, updated_at = ? WHERE id = ?'
-    ).bind(notes, Date.now(), id).run();
+    const now = Date.now();
+    const result = await userRepo.updateNotes(db, id, notes, now);
     clearUserCache();
     return result;
 }
@@ -199,14 +212,13 @@ export async function updateNotes(db, id, notes) {
 /**
  * 更新用户密码 (by id)
  * 同时递增 token_version，使所有旧 Token 失效
- * @param {D1Database} db 
+ * @param {DB} db 
  * @param {number} id 
  * @param {string} passwordHash 
  */
 export async function updatePassword(db, id, passwordHash) {
-    const result = await db.prepare(
-        'UPDATE users SET password_hash = ?, token_version = token_version + 1, updated_at = ? WHERE id = ?'
-    ).bind(passwordHash, Date.now(), id).run();
+    const now = Date.now();
+    const result = await userRepo.updatePasswordAndBumpTokenVersion(db, id, passwordHash, now);
     clearUserCache();
     return result;
 }
