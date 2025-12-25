@@ -16,6 +16,7 @@ const UserDashboard = () => {
     const [showPwdModal, setShowPwdModal] = useState(false);
     const [showUsernameModal, setShowUsernameModal] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [refreshingCache, setRefreshingCache] = useState(false);
     const [settingsExpanded, setSettingsExpanded] = useState(false);
     const [currentUsername, setCurrentUsername] = useState('');
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -57,6 +58,29 @@ const UserDashboard = () => {
     const handlePwdModalClose = (success) => {
         setShowPwdModal(false);
         if (success) toast.success('密码修改成功！');
+    };
+
+    const handleRefreshCache = async () => {
+        if (refreshingCache) return;
+        if (!effectivePath) {
+            toast.error('用户路径为空，无法刷新缓存');
+            return;
+        }
+        setRefreshingCache(true);
+        try {
+            const refreshUrl = `${baseUrl}/${effectivePath}/api/utils/refresh?t=${Date.now()}`;
+            const res = await fetch(refreshUrl, { method: 'GET' });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                toast.error(payload?.error || '刷新缓存失败');
+                return;
+            }
+            toast.success('缓存已刷新，请在 Sub-Store 前端重新拉取订阅或点击刷新。');
+        } catch (e) {
+            toast.error('刷新缓存失败');
+        } finally {
+            setRefreshingCache(false);
+        }
     };
 
     const baseUrl = window.location.origin;
@@ -180,6 +204,17 @@ const UserDashboard = () => {
                             </svg>
                             API 地址
                         </h2>
+                        <button
+                            onClick={handleRefreshCache}
+                            disabled={refreshingCache}
+                            className={`px-3 py-2 rounded-lg text-xs transition-colors border ${refreshingCache
+                                ? 'bg-slate-700/50 text-gray-400 border-slate-700 cursor-not-allowed'
+                                : 'bg-slate-800/60 hover:bg-slate-700/60 text-gray-200 border-slate-700/50'
+                                }`}
+                            title="清理 Sub-Store 的缓存"
+                        >
+                            {refreshingCache ? '刷新中...' : '快速刷新缓存'}
+                        </button>
                     </div>
 
                     <div className="relative">
