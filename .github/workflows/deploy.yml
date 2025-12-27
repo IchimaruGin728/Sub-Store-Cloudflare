@@ -144,17 +144,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Sub-Store Source Code
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           VERSION=${{ needs.check-updates.outputs.backend_version }}
           echo "Downloading Sub-Store source $VERSION..."
-          # 下载源码
-          curl -L "https://github.com/${{ env.SUBSTORE_REPO }}/archive/refs/tags/${VERSION}.tar.gz" -o sub-store.tar.gz
-          tar -xzf sub-store.tar.gz
-          mv Sub-Store-* sub-store
+          # 使用仓库内脚本拉取后端源码（支持 GITHUB_TOKEN 降低限流概率）
+          SUBSTORE_REPO='${{ env.SUBSTORE_REPO }}' \
+          SUBSTORE_VERSION="$VERSION" \
+          bash scripts/fetch-substore.sh
           
           # 复制整个项目到构建目录（包含 sub-store/backend）
           mkdir -p build
-          rsync -av --exclude='.git' --exclude='sub-store.tar.gz' --exclude='build' --exclude='node_modules' . build/
+          rsync -av --exclude='.git' --exclude='build' --exclude='node_modules' . build/
 
       - name: Configure wrangler.toml
         run: |
