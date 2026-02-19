@@ -25,4 +25,6 @@ export const defaultSettings = {
     cronTimeBudgetMs: 20000,
     // 定时任务断点续跑的用户 ID
     cronLastUserId: 0,
+    mmdbCountryUrl: '',
+    mmdbAsnUrl: '',
 };

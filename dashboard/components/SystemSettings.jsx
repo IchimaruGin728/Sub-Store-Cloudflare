@@ -12,8 +12,26 @@ const SystemSettings = () => {
     const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [mmdbUpdating, setMmdbUpdating] = useState(false);
+    const [mmdbMetaLoading, setMmdbMetaLoading] = useState(false);
+    const [mmdbFiles, setMmdbFiles] = useState([]);
 
     useEffect(() => {
+        const loadMmdbMeta = async () => {
+            setMmdbMetaLoading(true);
+            try {
+                const res = await fetch('/api/dashboard/admin/mmdb/meta', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                setMmdbFiles(Array.isArray(data?.files) ? data.files : []);
+            } catch {
+                setMmdbFiles([]);
+            } finally {
+                setMmdbMetaLoading(false);
+            }
+        };
+
         fetch('/api/dashboard/admin/settings', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -21,6 +39,7 @@ const SystemSettings = () => {
             .then(data => {
                 setSettings(data);
                 setLoading(false);
+                loadMmdbMeta();
             })
             .catch(() => {
                 toast.error('加载设置失败');
@@ -31,13 +50,14 @@ const SystemSettings = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
+            const { mmdbCountryUrl, mmdbAsnUrl, ...settingsToSave } = settings;
             const res = await fetch('/api/dashboard/admin/settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(settings)
+                body: JSON.stringify(settingsToSave)
             });
             if (res.ok) {
                 toast.success('设置已保存');
@@ -53,6 +73,45 @@ const SystemSettings = () => {
 
     const updateSetting = (key, value) => {
         setSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    const formatTimestamp = (value) => {
+        const n = Number(value);
+        if (!Number.isFinite(n) || n <= 0) return '-';
+        return new Date(n).toLocaleString();
+    };
+
+    const handleUpdateMmdb = async () => {
+        setMmdbUpdating(true);
+        try {
+            const res = await fetch('/api/dashboard/admin/mmdb/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    countryUrl: settings.mmdbCountryUrl || '',
+                    asnUrl: settings.mmdbAsnUrl || '',
+                })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                toast.error(data?.error || 'MMDB 更新失败');
+                return;
+            }
+            setMmdbFiles(Array.isArray(data?.files) ? data.files : []);
+            setSettings(prev => ({
+                ...prev,
+                mmdbCountryUrl: settings.mmdbCountryUrl || prev.mmdbCountryUrl || '',
+                mmdbAsnUrl: settings.mmdbAsnUrl || prev.mmdbAsnUrl || '',
+            }));
+            toast.success('MMDB 更新成功');
+        } catch {
+            toast.error('MMDB 更新失败');
+        } finally {
+            setMmdbUpdating(false);
+        }
     };
 
     if (loading) {
@@ -88,7 +147,7 @@ const SystemSettings = () => {
                 </div>
             </nav>
 
-            <main className="max-w-4xl mx-auto px-4 py-8">
+            <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
                 <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
                     <div className="space-y-6">
                         {/* Frontend URL */}
@@ -282,6 +341,100 @@ const SystemSettings = () => {
                         >
                             {saving ? '保存中...' : '保存设置'}
                         </button>
+                    </div>
+                </div>
+
+                <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <div className="space-y-6">
+                        <div className="rounded-xl bg-slate-700/30 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <p className="text-white font-medium">MMDB 校验工具</p>
+                                <p className="text-gray-400 text-xs mt-1">
+                                    在浏览器本地验证 Country.mmdb 与 Country-asn.mmdb 是否满足当前项目字段要求
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate('/mmdb-validator')}
+                                className="px-4 py-2 rounded-lg bg-slate-600/70 text-gray-100 hover:bg-slate-600 transition-colors"
+                            >
+                                打开工具
+                            </button>
+                        </div>
+
+                        <div className="rounded-xl bg-slate-700/30 p-4 space-y-4">
+                            <div>
+                                <p className="text-white font-medium">MMDB 在线更新</p>
+                                <p className="text-gray-400 text-xs mt-1">
+                                    配置下载地址后可手动更新 IndexDO 中的 MMDB 缓存，更新后会记录每个库的构建时间
+                                </p>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-white text-sm font-medium mb-2">Country.mmdb URL</label>
+                                    <input
+                                        type="text"
+                                        value={settings.mmdbCountryUrl || ''}
+                                        onChange={e => updateSetting('mmdbCountryUrl', e.target.value)}
+                                        placeholder="https://example.com/Country.mmdb"
+                                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-500/50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-white text-sm font-medium mb-2">Country-asn.mmdb URL</label>
+                                    <input
+                                        type="text"
+                                        value={settings.mmdbAsnUrl || ''}
+                                        onChange={e => updateSetting('mmdbAsnUrl', e.target.value)}
+                                        placeholder="https://example.com/Country-asn.mmdb"
+                                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-slate-500/50"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleUpdateMmdb}
+                                disabled={mmdbUpdating}
+                                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-slate-600/70 text-gray-100 hover:bg-slate-600 transition-colors disabled:opacity-50"
+                            >
+                                {mmdbUpdating ? '更新中...' : '立即更新 MMDB'}
+                            </button>
+
+                            <div className="overflow-auto rounded-xl border border-slate-700/60">
+                                <table className="w-full min-w-[760px] text-sm">
+                                    <thead>
+                                        <tr className="text-left text-gray-400 border-b border-slate-700 bg-slate-900/60">
+                                            <th className="py-2 px-3">文件</th>
+                                            <th className="py-2 px-3">来源 URL</th>
+                                            <th className="py-2 px-3">构建时间</th>
+                                            <th className="py-2 px-3">更新时间</th>
+                                            <th className="py-2 px-3">大小</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {mmdbMetaLoading && (
+                                            <tr>
+                                                <td className="py-3 px-3 text-gray-400" colSpan={5}>加载中...</td>
+                                            </tr>
+                                        )}
+                                        {!mmdbMetaLoading && mmdbFiles.length === 0 && (
+                                            <tr>
+                                                <td className="py-3 px-3 text-gray-400" colSpan={5}>暂无 MMDB 缓存记录</td>
+                                            </tr>
+                                        )}
+                                        {!mmdbMetaLoading && mmdbFiles.map((file) => (
+                                            <tr key={file.name} className="border-b border-slate-800/70 align-top">
+                                                <td className="py-2 px-3 text-gray-200">{file.name}</td>
+                                                <td className="py-2 px-3 text-gray-300 break-all">{file.sourceUrl || '-'}</td>
+                                                <td className="py-2 px-3 text-gray-300">{formatTimestamp(file.buildEpoch)}</td>
+                                                <td className="py-2 px-3 text-gray-300">{formatTimestamp(file.updatedAt)}</td>
+                                                <td className="py-2 px-3 text-gray-300">{Number.isFinite(Number(file.size)) ? `${(Number(file.size) / 1024 / 1024).toFixed(2)} MB` : '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>

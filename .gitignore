@@ -1,12 +1,19 @@
+AGENTS.md
+
 # Dependencies
 node_modules/
 sub-store
 sub-store*
+.vite
 
 # Build output
 dist/
 src/sub-store-bundle.js
 public/dashboard/
+
+# QuickJS wasm files copied from node_modules
+src/adapters/quickjs/wasm/*.wasm
+src/adapters/quickjs/wasm/*.wasm.map.txt
 
 # Wrangler
 .wrangler/

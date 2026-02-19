@@ -1,19 +1,12 @@
 /**
  * Dashboard API 路由入口
- * 
- * 路由模块：
- * - routes/public.js  - 公开路由（验证码、登录）
- * - routes/user.js    - 用户路由
- * - routes/admin.js   - 管理员路由
+ *
+ * 说明：
+ * - 这里只做路由归类（L2 DataOfficer）与编排调用（L2 Commander）
+ * - 具体业务动作在 L3 Molecule（public/user/admin）
  */
-import { authenticateRequest } from './auth.js';
-import { corsHeaders, errorResponse } from './utils/response.js';
-import { handlePublicRoutes } from './routes/public.js';
-import { handleUserRoutes } from './routes/user.js';
-import { handleAdminRoutes } from './routes/admin.js';
-import { error as logError } from '../utils/logger.js';
-import { getUserById } from './user.js';
-import { verifyPassword } from './password.js';
+import { parseDashboardRoute } from './orchestration/dataOfficer/dashboardRouteDataOfficer.js';
+import { handle as dashboardCommanderHandle } from './orchestration/commander/dashboardCommander.js';
 
 /**
  * Handle Dashboard API Requests
@@ -22,75 +15,6 @@ import { verifyPassword } from './password.js';
  * @returns {Promise<Response|null>} Response if handled, null if not
  */
 export async function handleDashboardRequest(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    // API 路由
-    if (path.startsWith('/api/dashboard')) {
-        // 继续到下面的 API 处理逻辑
-    }
-    // 静态资源
-    else if (path.startsWith('/dashboard/assets/')) {
-        return env.ASSETS.fetch(request);
-    }
-    // SPA 路由: 所有 /dashboard/* 路径返回 index.html
-    else if (path.startsWith('/dashboard')) {
-        const indexUrl = new URL(request.url);
-        indexUrl.pathname = '/dashboard/index.html';
-        return env.ASSETS.fetch(indexUrl.toString());
-    }
-    else {
-        return null;
-    }
-
-    // --- API 处理逻辑 ---
-    if (!path.startsWith('/api/dashboard')) {
-        return null;
-    }
-
-    const method = request.method;
-
-    if (method === 'OPTIONS') {
-        return new Response(null, { headers: corsHeaders });
-    }
-
-    try {
-        // ===== 公开路由 =====
-        const publicResult = await handlePublicRoutes(request, env);
-        if (publicResult) return publicResult;
-
-        // ===== 需要认证的路由 =====
-        const authPayload = await authenticateRequest(request, env.DB, env);
-        if (!authPayload) {
-            return errorResponse('Unauthorized', 401);
-        }
-
-        if (authPayload.role === 'admin') {
-            const currentUser = await getUserById(env.DB, authPayload.id);
-            const mustChangePassword = currentUser
-                ? await verifyPassword('admin', currentUser.password_hash)
-                : false;
-
-            const allowChangePassword = path === '/api/dashboard/user/password' && method === 'POST';
-            const allowReadMe = path === '/api/dashboard/user/me' && method === 'GET';
-
-            if (mustChangePassword && !(allowChangePassword || allowReadMe)) {
-                return errorResponse('请先修改默认管理员密码', 403);
-            }
-        }
-
-        // 用户路由
-        const userResult = await handleUserRoutes(request, env, authPayload);
-        if (userResult) return userResult;
-
-        // 管理员路由
-        const adminResult = await handleAdminRoutes(request, env, authPayload);
-        if (adminResult) return adminResult;
-
-        return errorResponse('Not Found', 404);
-
-    } catch (err) {
-        logError('[Dashboard]', err);
-        return errorResponse(err.message, 500);
-    }
+    const route = parseDashboardRoute(request);
+    return await dashboardCommanderHandle({ request, env, route });
 }

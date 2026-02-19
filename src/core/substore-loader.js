@@ -45,9 +45,3 @@ export async function initSubStore($request) {
     }
 }
 
-/**
- * 重置初始化状态（用于多租户场景）
- */
-export function resetSubStore() {
-    initialized = false;
-}

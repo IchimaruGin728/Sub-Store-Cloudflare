@@ -30,6 +30,14 @@ function subStoreTransformPlugin() {
     let downloadPatchApplied = 0;
     let downloadFileSeen = false;
 
+    // fail-fast 统计：processors/index.js 脚本执行补丁必须命中且只命中一次
+    let processorsPatchApplied = 0;
+    let processorsFileSeen = false;
+
+    // fail-fast：core/app.js OpenAPI debug 开关补丁
+    let openApiDebugPatchApplied = 0;
+    let openApiDebugFileSeen = false;
+
     return {
         name: 'sub-store-transform',
         enforce: 'pre',
@@ -318,7 +326,7 @@ const tasks = {
                     const requiredNeedles = [
                         'tasks.has(id)',
                         'tasks.set(id, result)',
-                        'const id = hex_md5(userAgent + url)',
+                        'const id = hex_md5(',
                     ];
                     const missing = requiredNeedles.filter((n) => !chunk.includes(n));
                     if (missing.length > 0) {
@@ -436,6 +444,81 @@ const tasks = {
                 }
             }
 
+            // ============ processors/index.js 修改：用 QuickJS 替代 new Function（用户脚本执行） ============
+            if (id.includes('sub-store/backend/src/core/proxy-utils/processors/index.js')) {
+                processorsFileSeen = true;
+
+                // 已补丁则跳过
+                if (!contents.includes('__SUB_STORE_WORKERS_PATCH__QUICKJS_CREATE_DYNAMIC_FUNCTION__')) {
+                    const startMarker = 'function createDynamicFunction(name, script, $arguments, $options) {';
+                    const startIdx = contents.indexOf(startMarker);
+                    if (startIdx === -1) {
+                        this.error('[sub-store-transform] processors/index.js 补丁未应用：未找到 createDynamicFunction 定义');
+                    }
+
+                    // 该函数位于文件末尾（当前 upstream 结构），直接替换到 EOF，避免复杂括号匹配。
+                    const before = contents.slice(0, startIdx);
+
+                    const patched = `function createDynamicFunction(name, script, $arguments, $options) {
+    // __SUB_STORE_WORKERS_PATCH__QUICKJS_CREATE_DYNAMIC_FUNCTION__
+    // Cloudflare Workers 禁止 new Function/eval：将用户脚本执行委托给宿主 QuickJS 引擎。
+    const flowUtils = {
+        getFlowField,
+        getFlowHeaders,
+        parseFlowHeaders,
+        flowTransfer,
+        validCheck,
+        getRmainingDays,
+        normalizeFlowHeader,
+    };
+
+    const factory = globalThis.__substore_workers_createDynamicFunction__;
+    if (typeof factory !== 'function') {
+        throw new Error('[Sub-Store Workers] QuickJS script engine not installed');
+    }
+
+    return factory({
+        name,
+        script,
+        $arguments,
+        $options,
+        $substore: $,
+        lodash,
+        ProxyUtils,
+        scriptResourceCache,
+        flowUtils,
+        produceArtifact,
+    });
+}
+`;
+
+                    processorsPatchApplied += 1;
+                    contents = before + patched;
+
+                    if (!contents.includes('__SUB_STORE_WORKERS_PATCH__QUICKJS_CREATE_DYNAMIC_FUNCTION__')) {
+                        this.error('[sub-store-transform] processors/index.js 补丁自检失败：缺少 marker');
+                    }
+                }
+            }
+
+            // ============ core/app.js 修改：让 $.log 跟随 DEBUG=true 输出 ============
+            if (id.includes('sub-store/backend/src/core/app.js')) {
+                openApiDebugFileSeen = true;
+                if (!contents.includes('__SUB_STORE_WORKERS_PATCH__OPENAPI_DEBUG__')) {
+                    const beforeApp = contents;
+                    contents = contents.replace(
+                        "const $ = new OpenAPI('sub-store');",
+                        "const $ = new OpenAPI('sub-store', (process.env.DEBUG === 'true' || process.env.DEBUG === true)); /* __SUB_STORE_WORKERS_PATCH__OPENAPI_DEBUG__ */",
+                    );
+                    if (contents !== beforeApp) {
+                        openApiDebugPatchApplied += 1;
+                    } else {
+                        this.error('[sub-store-transform] core/app.js debug 补丁未应用：未命中 OpenAPI 初始化行');
+                    }
+                }
+            }
+
+
             if (contents !== code) {
                 return { code: contents, map: null };
             }
@@ -460,6 +543,19 @@ const tasks = {
             if (openApiFileSeen && openApiPatchApplied !== 1) {
                 this.error(
                     `[sub-store-transform] open-api.js 补丁未正确应用：期望 1 次，实际 ${openApiPatchApplied} 次`
+                );
+            }
+
+            // processors/index.js 是运行期关键补丁：如果参与构建就必须命中
+            if (processorsFileSeen && processorsPatchApplied !== 1) {
+                this.error(
+                    `[sub-store-transform] processors/index.js 补丁未正确应用：期望 1 次，实际 ${processorsPatchApplied} 次`
+                );
+            }
+
+            if (openApiDebugFileSeen && openApiDebugPatchApplied !== 1) {
+                this.error(
+                    `[sub-store-transform] core/app.js OpenAPI debug 补丁未正确应用：期望 1 次，实际 ${openApiDebugPatchApplied} 次`
                 );
             }
         },
@@ -499,6 +595,7 @@ export default defineConfig({
     },
     // 开发服务器配置
     server: {
+        strictPort: true,
         cors: {
             origin: '*',
             methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],

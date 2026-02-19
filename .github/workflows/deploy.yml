@@ -117,14 +117,8 @@ jobs:
 
       - name: Check If Frontend Deploy Is Enabled
         id: frontend-check
-        env:
-          DEPLOY_FRONTEND_SECRET: ${{ secrets.DEPLOY_SUB_STORE_FRONTEND }}
         run: |
-          if [ -n "$DEPLOY_FRONTEND_SECRET" ]; then
-            echo "deploy_frontend=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy_frontend=false" >> $GITHUB_OUTPUT
-          fi
+          echo "deploy_frontend=${{ secrets.DEPLOY_SUB_STORE_FRONTEND != '' }}" >> $GITHUB_OUTPUT
 
   deploy-backend:
     needs: check-updates

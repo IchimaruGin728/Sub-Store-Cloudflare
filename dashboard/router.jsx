@@ -11,6 +11,7 @@ import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import SystemSettings from './components/SystemSettings';
 import SettingsPanel from './components/SettingsPanel';
+import MmdbValidator from './components/MmdbValidator';
 
 // 受保护路由包装器
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -70,6 +71,15 @@ export const AppRouter = () => {
                     element={
                         <ProtectedRoute adminOnly>
                             <SystemSettings />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/mmdb-validator"
+                    element={
+                        <ProtectedRoute adminOnly>
+                            <MmdbValidator />
                         </ProtectedRoute>
                     }
                 />

@@ -4,25 +4,30 @@
     "description": "Sub-Store Cloudflare Workers Adapter",
     "type": "module",
     "scripts": {
-        "dev": "vite dev --host 0.0.0.0 --port 3000",
-        "build": "vite build",
-        "preview": "vite preview --host 0.0.0.0 --port 3000",
+        "prepare:quickjs-wasm": "bash scripts/copy-quickjs-wasm.sh",
+        "dev": "bun run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",
+        "build": "bun run prepare:quickjs-wasm && vite build",
+        "preview": "bun run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
         "fetch:substore": "bash scripts/fetch-substore.sh",
         "install:backend": "cd sub-store/backend && bun install --ignore-scripts",
-        "deploy:local": "npx wrangler deploy",
-        "deploy:action": "set -o pipefail && npx wrangler deploy 2>&1 | sed -e '/workers.dev/d' -e '/https:\\/\\//d'",
+        "deploy:local": "bun run prepare:quickjs-wasm && npx wrangler deploy",
+        "deploy:action": "set -o pipefail && bun run prepare:quickjs-wasm && npx wrangler deploy 2>&1 | sed -e '/workers.dev/d' -e '/https:\\/\\//d'",
         "tail": "npx wrangler tail --format=pretty"
     },
     "devDependencies": {
         "@cloudflare/vite-plugin": "^1.18.0",
         "@vitejs/plugin-react": "^5.1.2",
         "vite": "^7.3.0",
-        "wrangler": "^4.0.0"
+        "wrangler": "^4.61.0"
     },
     "dependencies": {
         "@cloudflare/actors": "0.0.1-beta.6",
         "@marsidev/react-turnstile": "^1.4.0",
+        "@jitl/quickjs-wasmfile-release-sync": "^0.31.0",
+        "buffer": "^6.0.3",
         "jose": "^6.1.3",
+        "mmdb-lib": "^3.0.1",
+        "quickjs-emscripten": "^0.31.0",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
         "react-router-dom": "^7.11.0"

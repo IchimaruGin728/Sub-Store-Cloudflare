@@ -19,12 +19,18 @@
 ## ⚠️ 功能限制
 
 > [!CAUTION]
-> **脚本相关操作**：由于 Cloudflare Workers 禁止 `eval()` 和 `new Function()`，**无法使用任何自定义脚本功能**。
+> **脚本相关操作**：
 > 
-> 如需使用脚本功能，请查看 [Sub-Store 相关教程](https://xream.notion.site/Sub-Store-abe6a96944724dc6a36833d5c9ab7c87) 将其部署到 VPS/Docker 运行
+> 本项目通过 **QuickJS (WASM)** 为 Sub-Store 的「脚本过滤/脚本操作」提供兼容实现（实验性）。
+> - ✅ 支持 `async/await`（通过 QuickJS Promise + pendingJobs 驱动）
+> - ✅ 默认启用 CPU/内存/栈限制，避免脚本无限循环/内存失控
+> - ⚠️ 仍属于兼容层能力：与 Node 环境不等价，不支持 `require`/本地文件等
+> - ⚠️ 大脚本/大数据会有额外开销（需要在宿主与 QuickJS 之间做数据序列化/复制）
+> 
+> 如遇到部分脚本功能无法使用，请查看 [Sub-Store 相关教程](https://xream.notion.site/Sub-Store-abe6a96944724dc6a36833d5c9ab7c87) 将其部署到 VPS/Docker 运行
 
-- **脚本**：不可用
-- **GeoIP**: 不可用，由于脚本不可用，所以也没有实现的必要
+- **脚本**：QuickJS 兼容实现
+- **GeoIP**: 已实现，需要在仪表盘配置 mmdb 文件 URL
 - **代理请求**: 不可用，但也不需要
 - **推送通知**: shoutrrr 不可用，可以使用其他方式 Bark、Pushover
 
@@ -46,6 +52,8 @@
 ### 第二步：创建 Cloudflare Pages 项目（前端）
 
 如果你想直接使用官方前端，可以跳过此步骤，并且后面的 GitHub Secrets 中的 `DEPLOY_SUB_STORE_FRONTEND` 也无需设置。
+
+*建议使用官方前端*
 
 1. 在 Cloudflare Dashboard 选择 **Workers & Pages**
 2. 点击 **Create** → **Pages** → **Direct Upload**
