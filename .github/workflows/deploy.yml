@@ -47,11 +47,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-
       - name: Restore Last Version Cache
         uses: actions/cache/restore@v4
         with:
@@ -64,56 +59,15 @@ jobs:
 
       - name: Check for New Releases
         id: check
-        run: |
-          # 获取最新版本
-          BACKEND_VERSION=$(curl -m 10 -s https://api.github.com/repos/${{ env.SUBSTORE_REPO }}/releases/latest | jq -r '.tag_name' || echo "fetch-failed")
-          FRONTEND_VERSION=$(curl -m 10 -s https://api.github.com/repos/${{ env.FRONTEND_REPO }}/releases/latest | jq -r '.tag_name' || echo "fetch-failed")
-
-          if [[ "$BACKEND_VERSION" == "fetch-failed" || "$FRONTEND_VERSION" == "fetch-failed" ]]; then
-            echo "::error::获取上游 releases 版本失败（可能是网络/限流），停止部署"
-            exit 1
-          fi
-
-          echo "backend_version=$BACKEND_VERSION" >> $GITHUB_OUTPUT
-          echo "frontend_version=$FRONTEND_VERSION" >> $GITHUB_OUTPUT
-
-          # 获取上次部署的版本
-          LAST_BACKEND=$(cat .last-backend-version 2>/dev/null || echo "none")
-          LAST_FRONTEND=$(cat .last-frontend-version 2>/dev/null || echo "none")
-
-          echo "Current backend: $BACKEND_VERSION (last: $LAST_BACKEND)"
-          echo "Current frontend: $FRONTEND_VERSION (last: $LAST_FRONTEND)"
-
-          # 使用动态令牌避免 if 条件/日志被意外处理（不要用纯 true/false）
-          DEPLOY_TOKEN="ACTION_START_${{ github.run_id }}"
-
-          # 后端：push / force / 版本变化 都触发
-          if [[ "${{ github.event.inputs.force_deploy }}" == "true" ]] || \
-             [[ "${{ github.event_name }}" == "push" ]] || \
-             [[ "$BACKEND_VERSION" != "$LAST_BACKEND" ]]; then
-            echo "deploy_backend=$DEPLOY_TOKEN" >> $GITHUB_OUTPUT
-            echo "Backend deploy: YES"
-          else
-            echo "deploy_backend=ACTION_HOLD" >> $GITHUB_OUTPUT
-            echo "Backend deploy: NO"
-          fi
-
-          # 前端：支持 workflow_dispatch 手动控制（auto/deploy/skip）
-          MODE="${{ github.event.inputs.deploy_frontend }}"
-          if [[ -z "$MODE" ]]; then MODE="auto"; fi
-          if [[ "$MODE" == "deploy" ]]; then
-            echo "deploy_frontend_needed=$DEPLOY_TOKEN" >> $GITHUB_OUTPUT
-            echo "Frontend deploy: YES (manual deploy)"
-          elif [[ "$MODE" == "skip" ]]; then
-            echo "deploy_frontend_needed=ACTION_HOLD" >> $GITHUB_OUTPUT
-            echo "Frontend deploy: NO (manual skip)"
-          elif [[ "$FRONTEND_VERSION" != "$LAST_FRONTEND" ]]; then
-            echo "deploy_frontend_needed=$DEPLOY_TOKEN" >> $GITHUB_OUTPUT
-            echo "Frontend deploy: YES (version changed)"
-          else
-            echo "deploy_frontend_needed=ACTION_HOLD" >> $GITHUB_OUTPUT
-            echo "Frontend deploy: NO"
-          fi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SUBSTORE_REPO: ${{ env.SUBSTORE_REPO }}
+          FRONTEND_REPO: ${{ env.FRONTEND_REPO }}
+          FORCE_DEPLOY: ${{ github.event.inputs.force_deploy || 'false' }}
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOY_FRONTEND_MODE: ${{ github.event.inputs.deploy_frontend || 'auto' }}
+          RUN_ID: ${{ github.run_id }}
+        run: node scripts/check-updates.js
 
       - name: Check If Frontend Deploy Is Enabled
         id: frontend-check
