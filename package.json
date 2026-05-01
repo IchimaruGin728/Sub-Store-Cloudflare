@@ -7,12 +7,12 @@
         "prepare:quickjs-wasm": "bash scripts/copy-quickjs-wasm.sh",
         "dev": "bun run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",
         "build": "bun run prepare:quickjs-wasm && vite build",
+        "build:worker": "bash scripts/build-worker.sh",
         "build:pages": "bash scripts/build-pages-frontend.sh",
         "preview": "bun run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
         "fetch:substore": "bash scripts/fetch-substore.sh",
         "install:backend": "cd sub-store/backend && bun install --ignore-scripts",
         "deploy:local": "bun run prepare:quickjs-wasm && npx wrangler deploy",
-        "deploy:action": "set -o pipefail && bun run prepare:quickjs-wasm && npx wrangler deploy 2>&1 | sed -e '/workers.dev/d' -e '/https:\\/\\//d'",
         "tail": "npx wrangler tail --format=pretty"
     },
     "devDependencies": {

@@ -65,7 +65,8 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 1. Stabilize current deploy path.
    - Use latest toolchain packages.
    - Keep upstream sync as a safety net.
-   - Build frontend through Cloudflare Pages when a deploy hook is configured.
+   - Let Cloudflare Git integrations build/deploy Workers and Pages.
+   - Keep GitHub Actions limited to upstream release monitoring and version marker commits.
 
 2. Introduce native data model beside current adapter.
    - Define D1 schema for subscriptions, sources, processors, outputs, jobs, logs.
@@ -83,11 +84,16 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
    - Keep upstream sync only for reference tests and compatibility fixtures.
    - Remove Express/Sub-Store loader patches after parity is good enough.
 
-## Cloudflare Pages Build Mode
+## Cloudflare Git Build Mode
 
-To use Cloudflare Pages paid-plan build quota, connect the Pages project to this repository and set:
+GitHub Actions does not deploy this project. It only monitors upstream latest releases and commits `.upstream/*` version markers when they change. Cloudflare sees those commits through the Git integration and builds with Cloudflare quota.
+
+Workers:
+
+- Build command: `bash scripts/build-worker.sh`
+- Secret: configure `JWT_SECRET` in the Cloudflare Worker project
+
+Pages:
 
 - Build command: `bash scripts/build-pages-frontend.sh`
 - Build output directory: `frontend-dist/dist`
-
-Optionally set `CF_PAGES_DEPLOY_HOOK` as a GitHub Actions secret. When present, GitHub Actions triggers the Cloudflare Pages build hook instead of direct-uploading the frontend with Wrangler.

@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-05-01T15:41:07.812Z",
+  "backend": {
+    "repo": "sub-store-org/Sub-Store",
+    "tagName": "2.22.15",
+    "name": "2.22.15",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.15",
+    "publishedAt": "2026-05-01T09:34:22Z"
+  },
+  "frontend": {
+    "repo": "sub-store-org/Sub-Store-Front-End",
+    "tagName": "2.16.79",
+    "name": "2.16.79",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.79",
+    "publishedAt": "2026-04-29T10:41:13Z"
+  },
+  "previous": {
+    "backend": "2.22.15",
+    "frontend": "2.16.79"
+  }
+}

@@ -20,6 +20,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 work_dir="${root_dir}/sub-store"
 backend_dir="${work_dir}/backend"
 marker_file="${work_dir}/.substore-version"
+upstream_version_file="${root_dir}/.upstream/backend-version"
 
 log() {
   printf '%s\n' "[fetch-substore] $*"
@@ -122,6 +123,12 @@ get_latest_version() {
 }
 
 version="${SUBSTORE_VERSION}"
+if [[ -z "${version}" && -f "${upstream_version_file}" ]]; then
+  version="$(tr -d '[:space:]' < "${upstream_version_file}")"
+  if [[ -n "${version}" ]]; then
+    log "使用 .upstream/backend-version 指定的版本：${version}"
+  fi
+fi
 if [[ -z "${version}" ]]; then
   log "未设置 SUBSTORE_VERSION，正在解析最新 release 版本..."
   version="$(get_latest_version)"

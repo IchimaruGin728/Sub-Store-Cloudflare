@@ -6,6 +6,7 @@ FRONTEND_REPO="${FRONTEND_REPO:-sub-store-org/Sub-Store-Front-End}"
 FRONTEND_VERSION="${FRONTEND_VERSION:-}"
 OUT_ROOT="${OUT_ROOT:-${ROOT_DIR}/frontend-dist}"
 OUT_DIR="${OUT_ROOT}/dist"
+UPSTREAM_VERSION_FILE="${ROOT_DIR}/.upstream/frontend-version"
 
 log() {
   printf '%s\n' "[build-pages-frontend] $*" >&2
@@ -21,6 +22,15 @@ require_cmd() {
 require_cmd curl
 require_cmd unzip
 require_cmd node
+
+if [[ -z "${FRONTEND_VERSION}" ]]; then
+  if [[ -f "${UPSTREAM_VERSION_FILE}" ]]; then
+    FRONTEND_VERSION="$(tr -d '[:space:]' < "${UPSTREAM_VERSION_FILE}")"
+    if [[ -n "${FRONTEND_VERSION}" ]]; then
+      log "Using .upstream/frontend-version: ${FRONTEND_VERSION}"
+    fi
+  fi
+fi
 
 if [[ -z "${FRONTEND_VERSION}" ]]; then
   log "FRONTEND_VERSION not set; resolving latest release for ${FRONTEND_REPO}"
