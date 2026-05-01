@@ -1,7 +1,7 @@
 {
-    "name": "sub-store-workers",
+    "name": "sub-store-cloudflare",
     "version": "1.0.0",
-    "description": "Sub-Store Cloudflare Workers Adapter",
+    "description": "Sub-Store Cloudflare adapter for Workers and Pages",
     "type": "module",
     "scripts": {
         "prepare:quickjs-wasm": "bash scripts/copy-quickjs-wasm.sh",
@@ -18,7 +18,7 @@
         "@cloudflare/vite-plugin": "^1.18.0",
         "@vitejs/plugin-react": "^5.1.2",
         "vite": "^7.3.0",
-        "wrangler": "^4.61.0"
+        "wrangler": "latest"
     },
     "dependencies": {
         "@cloudflare/actors": "0.0.1-beta.6",

@@ -31,6 +31,24 @@ resolve_wasm_path() {
   exit 1
 }
 
+copy_if_changed() {
+  local src="$1"
+  local dest="$2"
+
+  if [[ ! -s "${src}" ]]; then
+    echo "[copy-quickjs-wasm] source file is empty: ${src}" >&2
+    exit 1
+  fi
+
+  if [[ -f "${dest}" ]] && cmp -s "${src}" "${dest}"; then
+    echo "[copy-quickjs-wasm] unchanged: ${dest}" >&2
+    return
+  fi
+
+  cp -f "${src}" "${dest}"
+  echo "[copy-quickjs-wasm] copied: ${dest}" >&2
+}
+
 copy_variant() {
   local variant_name="$1" # e.g. RELEASE_SYNC
   local kebab
@@ -45,11 +63,13 @@ copy_variant() {
     exit 1
   fi
 
-  cp -f "${wasm_file}" "${OUT_DIR}/${variant_name}.wasm"
+  copy_if_changed "${wasm_file}" "${OUT_DIR}/${variant_name}.wasm"
 
   # Optional source map (some variants provide it)
   if [[ -f "${wasm_file}.map" ]]; then
-    cp -f "${wasm_file}.map" "${OUT_DIR}/${variant_name}.wasm.map.txt"
+    copy_if_changed "${wasm_file}.map" "${OUT_DIR}/${variant_name}.wasm.map.txt"
+  else
+    rm -f "${OUT_DIR}/${variant_name}.wasm.map.txt"
   fi
 }
 

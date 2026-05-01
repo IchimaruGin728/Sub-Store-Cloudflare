@@ -11,8 +11,9 @@ on:
       - 'docs/**'
       - '*.md'
   schedule:
-    # 每 3 天检查一次更新并部署
-    - cron: '0 0 */3 * *'
+    # SGT 07:28 / 17:16 daily (UTC 23:28 / 09:16)
+    - cron: '28 23 * * *'
+    - cron: '16 9 * * *'
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -33,7 +34,7 @@ on:
 env:
   SUBSTORE_REPO: sub-store-org/Sub-Store
   FRONTEND_REPO: sub-store-org/Sub-Store-Front-End
-  WRANGLER_VERSION: 4.61.0
+  WRANGLER_VERSION: latest
   FRONTEND_PAGES_PROJECT: ${{ vars.FRONTEND_PAGES_PROJECT || 'sub-store-frontend' }}
 
 jobs:
@@ -119,7 +120,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: latest
+          check-latest: true
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -162,7 +164,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: latest
+          check-latest: true
 
       - name: Download Sub-Store Frontend dist
         run: |
@@ -172,6 +175,9 @@ jobs:
           curl -L "https://github.com/${{ env.FRONTEND_REPO }}/releases/download/${VERSION}/dist.zip" -o dist.zip
           unzip dist.zip -d frontend-dist
           test -d frontend-dist/dist
+
+      - name: Brand Cloudflare frontend dist
+        run: node scripts/brand-frontend-dist.js frontend-dist/dist
 
       - name: Ensure Cloudflare Pages project exists
         env:
