@@ -1,7 +1,7 @@
 # Sub-Store Cloudflare - wrangler.toml 示例配置
 # 复制此文件为 wrangler.toml 并填写实际配置
 
-name = "sub-store"
+name = "sub-store-cloudflare"
 main = "src/index.js"
 compatibility_date = "2025-11-17"
 compatibility_flags = ["nodejs_compat"]

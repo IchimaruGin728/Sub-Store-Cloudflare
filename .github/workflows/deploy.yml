@@ -36,7 +36,7 @@ env:
   SUBSTORE_REPO: sub-store-org/Sub-Store
   FRONTEND_REPO: sub-store-org/Sub-Store-Front-End
   WRANGLER_VERSION: latest
-  FRONTEND_PAGES_PROJECT: ${{ vars.FRONTEND_PAGES_PROJECT || 'sub-store-frontend' }}
+  FRONTEND_PAGES_PROJECT: ${{ vars.FRONTEND_PAGES_PROJECT || 'sub-store-cloudflare' }}
 
 jobs:
   check-updates:
