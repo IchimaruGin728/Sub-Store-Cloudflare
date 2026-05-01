@@ -45,7 +45,6 @@ jobs:
       deploy_frontend_needed: ${{ steps.check.outputs.deploy_frontend_needed }}
       backend_version: ${{ steps.check.outputs.backend_version }}
       frontend_version: ${{ steps.check.outputs.frontend_version }}
-      deploy_frontend: ${{ steps.frontend-check.outputs.deploy_frontend }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,11 +70,6 @@ jobs:
           DEPLOY_FRONTEND_MODE: ${{ github.event.inputs.deploy_frontend || 'auto' }}
           RUN_ID: ${{ github.run_id }}
         run: node scripts/check-updates.js
-
-      - name: Check If Frontend Deploy Is Enabled
-        id: frontend-check
-        run: |
-          echo "deploy_frontend=${{ secrets.DEPLOY_SUB_STORE_FRONTEND != '' }}" >> $GITHUB_OUTPUT
 
   deploy-backend:
     needs: check-updates
@@ -156,7 +150,7 @@ jobs:
 
   deploy-frontend:
     needs: check-updates
-    if: contains(needs.check-updates.outputs.deploy_frontend_needed, 'ACTION_START') && needs.check-updates.outputs.deploy_frontend == 'true'
+    if: contains(needs.check-updates.outputs.deploy_frontend_needed, 'ACTION_START')
     runs-on: ubuntu-latest
     name: Deploy Frontend
 
