@@ -33,6 +33,8 @@ on:
 env:
   SUBSTORE_REPO: sub-store-org/Sub-Store
   FRONTEND_REPO: sub-store-org/Sub-Store-Front-End
+  WRANGLER_VERSION: 4.61.0
+  FRONTEND_PAGES_PROJECT: ${{ vars.FRONTEND_PAGES_PROJECT || 'sub-store-frontend' }}
 
 jobs:
   check-updates:
@@ -114,6 +116,11 @@ jobs:
           ESCAPED_JWT_SECRET=$(printf '%s' "$JWT_SECRET" | sed -e 's/[\\/&]/\\\\&/g')
           sed -i "s|__JWT_SECRET__|$ESCAPED_JWT_SECRET|g" wrangler.toml
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -152,6 +159,11 @@ jobs:
     name: Deploy Frontend
 
     steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Download Sub-Store Frontend dist
         run: |
           VERSION=${{ needs.check-updates.outputs.frontend_version }}
@@ -159,13 +171,42 @@ jobs:
           # 直接下载 release 中的 dist.zip（已构建好）
           curl -L "https://github.com/${{ env.FRONTEND_REPO }}/releases/download/${VERSION}/dist.zip" -o dist.zip
           unzip dist.zip -d frontend-dist
+          test -d frontend-dist/dist
+
+      - name: Ensure Cloudflare Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          response_file="$(mktemp)"
+          status="$(
+            curl -sS -o "$response_file" -w '%{http_code}' \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${FRONTEND_PAGES_PROJECT}"
+          )"
+
+          if [ "$status" = "200" ]; then
+            echo "Cloudflare Pages project ${FRONTEND_PAGES_PROJECT} already exists."
+            exit 0
+          fi
+
+          if [ "$status" != "404" ]; then
+            echo "::error::Failed to check Cloudflare Pages project ${FRONTEND_PAGES_PROJECT} (HTTP ${status})."
+            cat "$response_file"
+            exit 1
+          fi
+
+          npx -y wrangler@${{ env.WRANGLER_VERSION }} pages project create "${FRONTEND_PAGES_PROJECT}" --production-branch=multi-tenant
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages deploy frontend-dist/dist --project-name=sub-store-frontend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          npx -y wrangler@${{ env.WRANGLER_VERSION }} pages deploy frontend-dist/dist \
+            --project-name="${{ env.FRONTEND_PAGES_PROJECT }}" \
+            --branch="${{ github.ref_name }}"
 
   update-version-cache:
     needs: [check-updates, deploy-backend, deploy-frontend]
