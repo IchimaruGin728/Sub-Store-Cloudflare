@@ -66,7 +66,7 @@ async function writeOutputs(outputs) {
 function buildHeaders() {
   const headers = {
     Accept: 'application/vnd.github+json',
-    'User-Agent': 'sub-store-workers-check-updates',
+    'User-Agent': 'sub-store-cloudflare-check-updates',
     'X-GitHub-Api-Version': '2022-11-28',
   };
   if (GITHUB_API_TOKEN) {

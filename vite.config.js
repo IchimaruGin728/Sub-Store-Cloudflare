@@ -1,5 +1,5 @@
 /**
- * Sub-Store Workers - Vite 配置
+ * Sub-Store Cloudflare - Vite 配置
  * 
  * 重要说明：
  * Cloudflare Vite 插件会自动处理 Worker 入口和静态资源。
@@ -474,7 +474,7 @@ const tasks = {
 
     const factory = globalThis.__substore_workers_createDynamicFunction__;
     if (typeof factory !== 'function') {
-        throw new Error('[Sub-Store Workers] QuickJS script engine not installed');
+        throw new Error('[Sub-Store Cloudflare] QuickJS script engine not installed');
     }
 
     return factory({

@@ -1,5 +1,5 @@
 /**
- * Sub-Store Workers 入口文件 (Multi-Tenant)
+ * Sub-Store Cloudflare 入口文件 (Multi-Tenant)
  * 每个用户通过其专属路径访问独立的 Sub-Store
  */
 

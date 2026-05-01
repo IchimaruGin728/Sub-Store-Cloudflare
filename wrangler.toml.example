@@ -1,4 +1,4 @@
-# Sub-Store Workers - wrangler.toml 示例配置
+# Sub-Store Cloudflare - wrangler.toml 示例配置
 # 复制此文件为 wrangler.toml 并填写实际配置
 
 name = "sub-store"
