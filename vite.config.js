@@ -7,7 +7,6 @@
  */
 import { defineConfig } from 'vite';
 import { cloudflare } from '@cloudflare/vite-plugin';
-import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -44,8 +43,8 @@ export default {
         },
         cloudflare: {
             runtime: 'workerd',
-            compute: ['Workers', 'Pages', 'Durable Objects', 'Queues', 'Workflows'],
-            storage: ['D1', 'Durable Object Storage', 'R2', 'KV'],
+            compute: ['Workers', 'Durable Objects', 'Queues', 'Workflows'],
+            storage: ['D1', 'Durable Object Storage', 'R2', 'KV', 'Secrets Store'],
             ai: ['Workers AI', 'AI Gateway', 'Vectorize'],
             media: ['Images', 'Stream'],
             observability: ['Workers Logs', 'Analytics Engine'],
@@ -623,8 +622,6 @@ const tasks = {
 
 export default defineConfig({
     plugins: [
-        // React JSX 支持 (Dashboard 前端)
-        react(),
         // Sub-Store 代码替换
         subStoreTransformPlugin(),
         // Cloudflare Workers 适配
@@ -635,22 +632,6 @@ export default defineConfig({
             // Sub-Store 源码路径别名
             '@': path.join(SUB_STORE_PATH, 'src')
         }
-    },
-    environments: {
-        client: {
-            build: {
-                assetsDir: 'dashboard/assets',
-                rollupOptions: {
-                    input: {
-                        dashboard: path.join(__dirname, 'dashboard/index.html')
-                    },
-                }
-            }
-        }
-    },
-    // 优化依赖预打包
-    optimizeDeps: {
-        include: ['react', 'react-dom', 'jose']
     },
     // 开发服务器配置
     server: {

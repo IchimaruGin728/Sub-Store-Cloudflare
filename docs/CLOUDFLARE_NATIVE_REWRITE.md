@@ -16,7 +16,6 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 | Capability | Cloudflare product | Use |
 |------------|--------------------|-----|
 | HTTP API and subscription output | Workers | Main API surface and edge routing |
-| Static frontend | Pages | Build/deploy frontend using Cloudflare build quota when configured |
 | Per-user state and serialized writes | Durable Objects | Single active coordinator for config, jobs, logs, and cache metadata |
 | Structured data | D1 | Queryable records for subscriptions, nodes, sync jobs, history, and logs |
 | Large assets and backup snapshots | R2 | mmdb files, generated artifacts, exports, backups |
@@ -25,7 +24,6 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 | Multi-step scheduled jobs | Workflows | Refresh pipelines with retries, checkpoints, and observability |
 | Cron refresh | Cron Triggers | SGT 07:28 and 17:16 update checks; user-configurable refresh later |
 | Secrets | Secrets Store / Worker secrets | Tokens, proxy auth, webhook credentials |
-| Bot/login protection | Turnstile | Optional protection for private UI endpoints |
 | Logs and metrics | Observability / Analytics Engine | Request logs, refresh latency, provider health, error rates |
 | AI helpers | Workers AI / AI Gateway / Vectorize | Optional rule suggestions, node tagging, natural-language filters |
 | Browser validation | Browser Rendering | Optional subscription provider checks requiring rendered pages |
@@ -67,7 +65,7 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
    - Use latest toolchain packages.
    - Use `wrangler.jsonc` only. Do not keep TOML Wrangler config.
    - Keep upstream sync as a safety net.
-   - Let Cloudflare Git integrations build/deploy Workers and Pages.
+   - Let Cloudflare Git integrations build/deploy Workers.
    - Keep GitHub Actions limited to upstream release monitoring and version marker commits.
 
 2. Introduce native data model beside current adapter.
@@ -104,8 +102,3 @@ Workers:
 - Config file: `wrangler.jsonc`
 - Secret Store: bind `JWT_SECRET_STORE` to the `JWT_SECRET` account secret
 - Local fallback: `JWT_SECRET` in `.dev.vars`
-
-Pages:
-
-- Build command: `bash scripts/build-pages-frontend.sh`
-- Build output directory: `frontend-dist/dist`

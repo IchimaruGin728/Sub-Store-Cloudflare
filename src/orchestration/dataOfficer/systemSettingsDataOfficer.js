@@ -3,7 +3,21 @@
  * 系统设置的 merge/patch 规则（不做 IO）。
  */
 
-import { defaultSettings } from '../../dashboard/settings-defaults.js';
+const defaultSettings = {
+    frontendUrl: '',
+    tokenExpiryHours: 168,
+    showUserPath: true,
+    captchaType: 'none',
+    turnstileSiteKey: '',
+    turnstileSecretKey: '',
+    passwordMinLength: 8,
+    cronBatchSize: 50,
+    cronMaxUsers: 200,
+    cronTimeBudgetMs: 20000,
+    cronLastUserId: 0,
+    mmdbCountryUrl: '',
+    mmdbAsnUrl: '',
+};
 
 export function mergeSystemSettings({ dbSettings }) {
     const db = dbSettings && typeof dbSettings === 'object' ? dbSettings : {};
@@ -35,4 +49,3 @@ export function mergeSystemSettingsPatch({ current, patch }) {
     const p = patch && typeof patch === 'object' ? patch : {};
     return { ...c, ...p };
 }
-

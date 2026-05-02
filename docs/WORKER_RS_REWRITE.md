@@ -32,8 +32,8 @@ The native Rust path should reduce QuickJS usage in this order:
 
 Use Cloudflare products directly instead of emulating a generic Node service:
 
-- Workers and Pages for request handling and frontend delivery.
-- Secrets Store for dashboard JWT signing and future provider/webhook tokens.
+- Workers for request handling and frontend delivery if a static UI is reintroduced later.
+- Secrets Store for private runtime tokens and future provider/webhook tokens.
 - Durable Objects for per-user serial execution and strongly consistent state.
 - D1 for queryable metadata, audit entries, and settings.
 - R2 for large files such as GeoIP databases and generated artifacts.
@@ -41,7 +41,7 @@ Use Cloudflare products directly instead of emulating a generic Node service:
 - Queues and Workflows for refresh pipelines.
 - Analytics Engine and Workers Logs for observability.
 - Workers AI, AI Gateway, and Vectorize only for optional enrichment/search features.
-- Images and Stream only when subscription artifacts or dashboard media actually need them.
+- Images and Stream only when subscription artifacts actually need media processing.
 
 ## Borrowed ideas
 
@@ -54,7 +54,7 @@ From `Yu9191/sub-store-workers`:
 
 From `SaintWe/Sub-Store-Workers`:
 
-- the existing Durable Object dashboard adapter was a useful migration base, but this repo is now independent and no longer a fork.
+- the old Durable Object dashboard adapter was a useful migration base, but it has been removed and this repo is now independent.
 
 ## Build
 

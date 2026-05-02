@@ -1,12 +1,12 @@
 {
     "name": "sub-store-cloudflare",
     "version": "1.0.0",
-    "description": "Sub-Store Cloudflare adapter for Workers and Pages",
+    "description": "Sub-Store Cloudflare adapter for Workers and worker-rs",
     "type": "module",
     "cloudflare": {
         "bindings": {
             "JWT_SECRET_STORE": {
-                "description": "Secrets Store binding for JWT_SECRET, used to sign dashboard sessions."
+                "description": "Secrets Store binding for private runtime tokens and future owner-only APIs."
             }
         }
     },
@@ -16,7 +16,6 @@
         "build": "pnpm run prepare:quickjs-wasm && vite build",
         "build:worker": "bash scripts/build-worker.sh",
         "build:worker-rs": "cd worker-rs && pnpm exec wrangler deploy --dry-run --outdir dist",
-        "build:pages": "bash scripts/build-pages-frontend.sh",
         "preview": "pnpm run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
         "fetch:substore": "bash scripts/fetch-substore.sh",
         "install:backend": "cd sub-store/backend && pnpm install",
@@ -25,20 +24,14 @@
     },
     "devDependencies": {
         "@cloudflare/vite-plugin": "latest",
-        "@vitejs/plugin-react": "latest",
         "vite": "latest",
         "wrangler": "latest"
     },
     "dependencies": {
         "@cloudflare/actors": "latest",
-        "@marsidev/react-turnstile": "latest",
         "@jitl/quickjs-wasmfile-release-sync": "latest",
         "buffer": "latest",
-        "jose": "latest",
         "mmdb-lib": "latest",
-        "quickjs-emscripten": "latest",
-        "react": "latest",
-        "react-dom": "latest",
-        "react-router-dom": "latest"
+        "quickjs-emscripten": "latest"
     }
 }

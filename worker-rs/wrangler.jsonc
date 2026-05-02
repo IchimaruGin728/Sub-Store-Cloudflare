@@ -9,6 +9,13 @@
     "vars": {
         "SUB_STORE_BACKEND_VERSION": "upstream-latest"
     },
+    "secrets_store_secrets": [
+        {
+            "binding": "JWT_SECRET_STORE",
+            "store_id": "eda45cbf8bd84149b51526d9fc2d66f3",
+            "secret_name": "JWT_SECRET"
+        }
+    ],
     "observability": {
         "enabled": true
     }

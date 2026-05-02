@@ -70,7 +70,7 @@ pub fn env_response(env: &Env) -> EnvResponse<'static> {
             cloudflare: true,
             worker: true,
             workers: true,
-            pages: true,
+            pages: false,
             surge: false,
         },
         meta: Meta {
@@ -82,13 +82,12 @@ pub fn env_response(env: &Env) -> EnvResponse<'static> {
             cloudflare: CloudflareMeta {
                 compute: vec![
                     "Workers",
-                    "Pages",
                     "Durable Objects",
                     "Queues",
                     "Workflows",
                     "Browser Rendering",
                 ],
-                storage: vec!["D1", "Durable Object Storage", "R2", "KV"],
+                storage: vec!["D1", "Durable Object Storage", "R2", "KV", "Secrets Store"],
                 ai: vec!["Workers AI", "AI Gateway", "Vectorize"],
                 media: vec!["Images", "Stream"],
                 observability: vec!["Workers Logs", "Analytics Engine"],
