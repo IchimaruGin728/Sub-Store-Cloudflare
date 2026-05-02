@@ -53,7 +53,5 @@ export function parseIndexDoRoute(request) {
         return { kind: 'mmdb-file-put', name };
     }
 
-    if (path.startsWith('/api/dashboard')) return { kind: 'dashboard-api' };
-
     return { kind: 'not-found' };
 }

@@ -234,7 +234,3 @@ export async function getAccessLogFromUserDo({ env, userId, limit, beforeId, req
         return { results: [], nextBeforeId: null };
     }
 }
-
-export async function fetchAsset({ requestOrUrl, env }) {
-    return await env.ASSETS.fetch(requestOrUrl);
-}

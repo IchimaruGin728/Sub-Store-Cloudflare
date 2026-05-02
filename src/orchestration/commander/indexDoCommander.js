@@ -14,7 +14,6 @@ import { proxyUserData } from '../../molecules/index/proxyUserData.js';
 import { getMmdbMeta } from '../../molecules/index/getMmdbMeta.js';
 import { getMmdbFile } from '../../molecules/index/getMmdbFile.js';
 import { putMmdbFile } from '../../molecules/index/putMmdbFile.js';
-import { handleDashboardApiViaDashboardCommander } from '../diplomat/dashboardApiViaDashboardCommanderDiplomat.js';
 import { buildNotFoundResponse } from '../../atoms/http/httpAtoms.js';
 
 export async function handle({ request, env, storage, requestId }) {
@@ -49,10 +48,6 @@ export async function handle({ request, env, storage, requestId }) {
 
     if (route.kind === 'user-data') {
         return await proxyUserData({ request, env, storage, requestId, route });
-    }
-
-    if (route.kind === 'dashboard-api') {
-        return await handleDashboardApiViaDashboardCommander({ request, env, storage, requestId });
     }
 
     if (route.kind === 'mmdb-meta') {

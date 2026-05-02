@@ -11,25 +11,15 @@ export function parseWorkerHttpRoute(request) {
         return { kind: 'cors-preflight' };
     }
 
+    if (pathname === '/health' || pathname === '/api/utils/worker-status') {
+        return { kind: 'health' };
+    }
+
     if (pathname.startsWith('/dashboard') || pathname.startsWith('/api/dashboard')) {
-        const isApi = pathname.startsWith('/api/dashboard');
-        const isAssets = pathname.startsWith('/dashboard/assets/');
-        return {
-            kind: 'dashboard',
-            dashboard: {
-                isApi,
-                isAssets,
-                pathname,
-            },
-        };
+        return { kind: 'not-found' };
     }
 
-    // Block internal mmdb assets under dashboard assets as well.
-    if (pathname.startsWith('/dashboard/assets/mmdb/')) {
-        return { kind: 'blocked-mmdb' };
-    }
-
-    // GeoIP MMDB files are internal assets (used by the runtime via env.ASSETS.fetch).
+    // GeoIP MMDB files are internal assets.
     // Do NOT expose them through public routes to avoid being scraped.
     if (pathname === '/mmdb' || pathname.startsWith('/mmdb/')) {
         return { kind: 'blocked-mmdb' };
