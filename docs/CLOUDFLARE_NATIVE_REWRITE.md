@@ -75,6 +75,7 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 3. Implement native parser and export pipeline.
    - Start with read-only preview endpoints.
    - Compare native output with upstream output on the same data.
+   - Current first slice: URI-list parser/exporter in `worker-rs/src/native`.
 
 4. Replace write paths.
    - Build single-user UI over native API.
