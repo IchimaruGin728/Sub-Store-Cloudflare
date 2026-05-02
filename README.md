@@ -77,7 +77,8 @@ Workers build：
 - Build command: `bash scripts/build-worker.sh`
 - Deploy command: Cloudflare Workers Git 集成默认部署当前 Worker 项目
 - Config file: `wrangler.jsonc`
-- 环境变量/Secrets：在 Cloudflare Worker 项目里设置 `JWT_SECRET`
+- Secret Store：`JWT_SECRET_STORE` 绑定到 `default_secrets_store` 里的 `JWT_SECRET`
+- Fallback：本地开发可在 `.dev.vars` 里临时设置 `JWT_SECRET`
 
 Pages build：
 

@@ -3,6 +3,13 @@
     "version": "1.0.0",
     "description": "Sub-Store Cloudflare adapter for Workers and Pages",
     "type": "module",
+    "cloudflare": {
+        "bindings": {
+            "JWT_SECRET_STORE": {
+                "description": "Secrets Store binding for JWT_SECRET, used to sign dashboard sessions."
+            }
+        }
+    },
     "scripts": {
         "prepare:quickjs-wasm": "bash scripts/copy-quickjs-wasm.sh",
         "dev": "pnpm run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",

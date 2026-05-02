@@ -102,7 +102,8 @@ Workers:
 
 - Build command: `bash scripts/build-worker.sh`
 - Config file: `wrangler.jsonc`
-- Secret: configure `JWT_SECRET` in the Cloudflare Worker project
+- Secret Store: bind `JWT_SECRET_STORE` to the `JWT_SECRET` account secret
+- Local fallback: `JWT_SECRET` in `.dev.vars`
 
 Pages:
 

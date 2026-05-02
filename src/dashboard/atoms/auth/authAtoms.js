@@ -8,18 +8,27 @@ export function getBearerTokenFromRequest(request) {
     return authHeader.slice('Bearer '.length).trim() || null;
 }
 
-export function getJwtSecretKeyBytes(env) {
-    const envSecret = env?.JWT_SECRET;
+async function readSecretStoreBinding(binding) {
+    if (!binding || typeof binding.get !== 'function') {
+        return null;
+    }
+    const value = await binding.get();
+    return typeof value === 'string' && value ? value : null;
+}
+
+export async function getJwtSecretKeyBytes(env) {
+    const secretStoreSecret = await readSecretStoreBinding(env?.JWT_SECRET_STORE);
+    const envSecret = typeof env?.JWT_SECRET === 'string' ? env.JWT_SECRET : null;
     const processSecret = typeof process !== 'undefined' ? process.env?.JWT_SECRET : undefined;
-    const secret = envSecret || processSecret;
+    const secret = secretStoreSecret || envSecret || processSecret;
     if (!secret) {
-        throw new Error('JWT_SECRET 未配置');
+        throw new Error('JWT_SECRET_STORE 或 JWT_SECRET 未配置');
     }
     return new TextEncoder().encode(secret);
 }
 
 export async function signJwtToken(payload, expiryHours, env) {
-    const secretKey = getJwtSecretKeyBytes(env);
+    const secretKey = await getJwtSecretKeyBytes(env);
     return await new SignJWT(payload)
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
@@ -29,7 +38,7 @@ export async function signJwtToken(payload, expiryHours, env) {
 
 export async function verifyJwtTokenOrNull(token, env) {
     try {
-        const secretKey = getJwtSecretKeyBytes(env);
+        const secretKey = await getJwtSecretKeyBytes(env);
         const { payload } = await jwtVerify(token, secretKey);
         return payload ?? null;
     } catch {

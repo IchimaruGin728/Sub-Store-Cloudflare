@@ -9,6 +9,13 @@
         "SUB_STORE_BACKEND_CUSTOM_NAME": "Cloudflare Workers",
         "SUB_STORE_BACKEND_CUSTOM_ICON": "https://cdn.jsdelivr.net/gh/IchimaruGin728/Sub-Store-Cloudflare@main/assets/cloudflare.svg"
     },
+    "secrets_store_secrets": [
+        {
+            "binding": "JWT_SECRET_STORE",
+            "store_id": "<SECRET_STORE_ID>",
+            "secret_name": "JWT_SECRET"
+        }
+    ],
     "durable_objects": {
         "bindings": [
             {

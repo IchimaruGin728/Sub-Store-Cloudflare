@@ -33,6 +33,7 @@ The native Rust path should reduce QuickJS usage in this order:
 Use Cloudflare products directly instead of emulating a generic Node service:
 
 - Workers and Pages for request handling and frontend delivery.
+- Secrets Store for dashboard JWT signing and future provider/webhook tokens.
 - Durable Objects for per-user serial execution and strongly consistent state.
 - D1 for queryable metadata, audit entries, and settings.
 - R2 for large files such as GeoIP databases and generated artifacts.
