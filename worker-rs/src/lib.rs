@@ -1,3 +1,4 @@
+mod native;
 mod routes;
 
 use worker::*;

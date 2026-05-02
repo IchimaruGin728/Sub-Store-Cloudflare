@@ -11,6 +11,8 @@ crate-type = ["cdylib"]
 console_error_panic_hook = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+base64 = "*"
+url = "*"
 worker = "*"
 
 [profile.release]

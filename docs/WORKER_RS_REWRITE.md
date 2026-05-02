@@ -13,10 +13,16 @@ Implemented in `worker-rs/src/lib.rs`:
 - `GET /api/utils/env`
 - `GET /api/utils/worker-status`
 - `GET /health`
+- `GET /api/native/capabilities`
+- `POST /api/native/parse`
+- `POST /api/native/export`
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
+- Native parser model for URI subscription lists
+- Native parsing for `ss`, `vmess`, `vless`, `trojan`, `hysteria2`/`hy2`
+- Whole-subscription base64 decode and node dedupe
 
-This is intentionally small. It gives Cloudflare Git builds a real Rust Worker target without pretending the whole Sub-Store runtime has already been ported.
+This is intentionally scoped. It gives Cloudflare Git builds a real Rust Worker target and starts replacing upstream's format normalization with typed Rust code without pretending the whole Sub-Store runtime has already been ported.
 
 ## QuickJS status
 
@@ -28,6 +34,28 @@ The native Rust path should handle script-like behavior in this order:
 2. Replace common script operators with typed Rust operators.
 3. Add a constrained transform DSL for custom rules.
 4. Consider QuickJS only as an explicit trusted fallback if native Rust coverage is not enough.
+
+## Native API Draft
+
+Parse a plain or base64 subscription URI list:
+
+```http
+POST /api/native/parse
+Content-Type: application/json
+
+{"content":"ss://aes-128-gcm:secret@example.com:8388#HK"}
+```
+
+Export normalized nodes:
+
+```http
+POST /api/native/export
+Content-Type: application/json
+
+{"target":"uri-list","content":"trojan://pass@example.com:443?security=tls&type=tcp#SG"}
+```
+
+Supported `target` values are currently `json` and `uri-list`.
 
 ## Cloudflare-native target
 
