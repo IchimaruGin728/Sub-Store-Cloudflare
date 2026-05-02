@@ -21,6 +21,7 @@ Implemented in `worker-rs/src/lib.rs`:
 - Native parser model for URI subscription lists
 - Native parsing for `ss`, `vmess`, `vless`, `trojan`, `hysteria2`/`hy2`
 - Whole-subscription base64 decode and node dedupe
+- Native export targets: `json`, `uri-list`, `clash`, `sing-box`
 
 This is intentionally scoped. It gives Cloudflare Git builds a real Rust Worker target and starts replacing upstream's format normalization with typed Rust code without pretending the whole Sub-Store runtime has already been ported.
 
@@ -55,7 +56,7 @@ Content-Type: application/json
 {"target":"uri-list","content":"trojan://pass@example.com:443?security=tls&type=tcp#SG"}
 ```
 
-Supported `target` values are currently `json` and `uri-list`.
+Supported `target` values are currently `json`, `uri-list`, `clash`, and `sing-box`.
 
 ## Cloudflare-native target
 

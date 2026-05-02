@@ -89,6 +89,6 @@ pub fn capabilities() -> CapabilitiesResponse {
             schemes: vec!["ss", "vmess", "vless", "trojan", "hysteria2", "hy2"],
             native: true,
         },
-        exporters: vec!["json", "uri-list"],
+        exporters: vec!["json", "uri-list", "clash", "sing-box"],
     }
 }

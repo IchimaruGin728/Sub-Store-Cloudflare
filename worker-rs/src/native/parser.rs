@@ -103,7 +103,7 @@ fn parse_url_proxy(line: &str, protocol: ProxyProtocol) -> Option<ProxyNode> {
     let name = fragment_or_host(&url);
     let mut params = query_params(&url);
     let username = non_empty_string(decode_percent(url.username()));
-    let password = url.password().map(decode_percent);
+    let url_password = url.password().map(decode_percent);
     let tls = params
         .remove("security")
         .or_else(|| params.remove("tls"))
@@ -112,6 +112,10 @@ fn parse_url_proxy(line: &str, protocol: ProxyProtocol) -> Option<ProxyNode> {
     let uuid = match protocol {
         ProxyProtocol::Vless => username.clone(),
         _ => None,
+    };
+    let password = match protocol {
+        ProxyProtocol::Trojan | ProxyProtocol::Hysteria2 => username.clone().or(url_password),
+        _ => url_password,
     };
 
     Some(ProxyNode {
