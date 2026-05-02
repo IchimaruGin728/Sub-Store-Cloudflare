@@ -1,31 +1,44 @@
 use super::model::ProxyProtocol;
 use super::model::{ExportResponse, ProxyNode};
 use super::parser::parse_subscription;
+use super::process::process_nodes;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use serde_json::{json, Map, Value};
 
-pub fn export_subscription(content: &str, target: Option<&str>) -> ExportResponse {
+pub fn export_subscription_with_processors(
+    content: &str,
+    target: Option<&str>,
+    processors: Option<&super::model::ProcessorOptions>,
+) -> ExportResponse {
     let parsed = parse_subscription(content);
+    let (nodes, processor_warnings, processor_deduped) = processors
+        .map(|options| process_nodes(parsed.nodes.clone(), options))
+        .unwrap_or((parsed.nodes.clone(), Vec::new(), 0));
     let target = target.unwrap_or("json");
     let content = match target {
-        "uri-list" | "uris" | "raw" => export_uri_list(&parsed.nodes),
-        "v2ray" => STANDARD.encode(export_uri_list(&parsed.nodes)),
-        "clash" | "clash-yaml" => export_clash_yaml(&parsed.nodes),
-        "clash-meta" | "mihomo" | "stash" => export_clash_yaml(&parsed.nodes),
-        "sing-box" | "singbox" => export_sing_box_json(&parsed.nodes),
-        "surge" | "surge-mac" | "surgemac" => export_named_lines(&parsed.nodes, named_line_surge),
-        "loon" => export_named_lines(&parsed.nodes, named_line_loon),
-        "quantumult-x" | "qx" => export_named_lines(&parsed.nodes, named_line_quantumult_x),
-        "shadowrocket" | "surfboard" | "egern" => export_uri_list(&parsed.nodes),
-        _ => serde_json::to_string_pretty(&parsed.nodes).unwrap_or_else(|_| "[]".to_string()),
+        "uri-list" | "uris" | "raw" => export_uri_list(&nodes),
+        "v2ray" => STANDARD.encode(export_uri_list(&nodes)),
+        "clash" | "clash-yaml" => export_clash_yaml(&nodes),
+        "clash-meta" | "mihomo" | "stash" => export_clash_yaml(&nodes),
+        "sing-box" | "singbox" => export_sing_box_json(&nodes),
+        "surge" | "surge-mac" | "surgemac" => export_named_lines(&nodes, named_line_surge),
+        "loon" => export_named_lines(&nodes, named_line_loon),
+        "quantumult-x" | "qx" => export_named_lines(&nodes, named_line_quantumult_x),
+        "shadowrocket" | "surfboard" | "egern" => export_uri_list(&nodes),
+        _ => serde_json::to_string_pretty(&nodes).unwrap_or_else(|_| "[]".to_string()),
     };
+    let mut stats = parsed.stats;
+    stats.parsed = nodes.len();
+    stats.deduped += processor_deduped;
+    let mut warnings = parsed.warnings;
+    warnings.extend(processor_warnings);
 
     ExportResponse {
         target: target.to_string(),
         content,
-        stats: parsed.stats,
-        warnings: parsed.warnings,
+        stats,
+        warnings,
     }
 }
 
@@ -495,8 +508,11 @@ mod tests {
 
     #[test]
     fn exports_clash_yaml() {
-        let exported =
-            export_subscription("ss://aes-128-gcm:secret@example.com:8388#HK", Some("clash"));
+        let exported = export_subscription_with_processors(
+            "ss://aes-128-gcm:secret@example.com:8388#HK",
+            Some("clash"),
+            None,
+        );
         assert!(exported.content.contains("proxies:"));
         assert!(exported.content.contains("type: ss"));
         assert!(exported.content.contains("cipher: aes-128-gcm"));
@@ -504,9 +520,10 @@ mod tests {
 
     #[test]
     fn exports_sing_box_json() {
-        let exported = export_subscription(
+        let exported = export_subscription_with_processors(
             "trojan://pass@example.com:443?security=tls&sni=sg.example.com#SG",
             Some("sing-box"),
+            None,
         );
         let value: Value = serde_json::from_str(&exported.content).expect("valid json");
         assert_eq!(value["outbounds"][0]["type"], "trojan");
@@ -533,7 +550,7 @@ mod tests {
             "surfboard",
             "egern",
         ] {
-            let exported = export_subscription(content, Some(target));
+            let exported = export_subscription_with_processors(content, Some(target), None);
             assert!(
                 !exported.content.is_empty(),
                 "target {target} should not be empty"

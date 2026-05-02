@@ -1,9 +1,10 @@
 mod responses;
 mod runtime;
 
-use crate::native::export::export_subscription;
-use crate::native::model::{capabilities, ExportRequest, ParseRequest};
+use crate::native::export::export_subscription_with_processors;
+use crate::native::model::{capabilities, ExportRequest, ParseRequest, ProcessRequest};
 use crate::native::parser::parse_subscription;
+use crate::native::process::process_subscription;
 use worker::*;
 
 pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
@@ -20,7 +21,15 @@ pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Respons
         }
         (Method::Post, "/api/native/export") => {
             let body: ExportRequest = req.json().await?;
-            Response::from_json(&export_subscription(&body.content, body.target.as_deref()))
+            Response::from_json(&export_subscription_with_processors(
+                &body.content,
+                body.target.as_deref(),
+                body.processors.as_ref(),
+            ))
+        }
+        (Method::Post, "/api/native/process") => {
+            let body: ProcessRequest = req.json().await?;
+            Response::from_json(&process_subscription(&body.content, &body.processors))
         }
         (Method::Get, "/health") => Response::ok("ok"),
         _ => Response::error("Not Found", 404),

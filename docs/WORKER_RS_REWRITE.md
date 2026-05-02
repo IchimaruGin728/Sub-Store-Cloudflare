@@ -15,6 +15,7 @@ Implemented in `worker-rs/src/lib.rs`:
 - `GET /health`
 - `GET /api/native/capabilities`
 - `POST /api/native/parse`
+- `POST /api/native/process`
 - `POST /api/native/export`
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
@@ -22,6 +23,7 @@ Implemented in `worker-rs/src/lib.rs`:
 - Native parsing for `ss`, `ssr`, `vmess`, `vless`, `trojan`, `hysteria`, `hysteria2`/`hy2`, `http`, `socks5`, `snell`, `tuic`, `anytls`, `wireguard`, and `ssh` where the input format exposes enough shared fields
 - Whole-subscription base64 decode and node dedupe
 - Native export targets: `json`, `uri-list`, `v2ray`, `clash`, `clash-meta`, `mihomo`, `stash`, `sing-box`, `surge`, `surge-mac`, `loon`, `quantumult-x`, `shadowrocket`, `surfboard`, and `egern`
+- Native no-script processors: `dedupe`, `filter`, `rename`, `sort`, and `limit`
 
 This is intentionally scoped. It gives Cloudflare Git builds a real Rust Worker target and starts replacing upstream's format normalization with typed Rust code without pretending the whole Sub-Store runtime has already been ported.
 
@@ -57,6 +59,23 @@ Content-Type: application/json
 ```
 
 Supported `target` values are currently `json`, `uri-list`, `v2ray`, `clash`, `clash-meta`, `mihomo`, `stash`, `sing-box`, `surge`, `surge-mac`, `loon`, `quantumult-x`, `shadowrocket`, `surfboard`, and `egern`.
+
+Process nodes before export:
+
+```http
+POST /api/native/export
+Content-Type: application/json
+
+{
+  "target": "clash",
+  "content": "ss://aes-128-gcm:secret@example.com:8388#HK",
+  "processors": {
+    "dedupe": true,
+    "rename": { "prefix": "[CF] " },
+    "sort": { "by": "name" }
+  }
+}
+```
 
 ## Cloudflare-native target
 

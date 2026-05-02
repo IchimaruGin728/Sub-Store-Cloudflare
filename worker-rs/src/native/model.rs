@@ -10,11 +10,19 @@ pub struct ParseRequest {
 pub struct ExportRequest {
     pub content: String,
     pub target: Option<String>,
+    pub processors: Option<ProcessorOptions>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProcessRequest {
+    pub content: String,
+    pub processors: ProcessorOptions,
 }
 
 #[derive(Debug, Serialize)]
 pub struct CapabilitiesResponse {
     pub parser: ParserCapabilities,
+    pub processors: Vec<&'static str>,
     pub exporters: Vec<&'static str>,
 }
 
@@ -38,6 +46,43 @@ pub struct ExportResponse {
     pub content: String,
     pub stats: ParseStats,
     pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessorOptions {
+    pub dedupe: Option<bool>,
+    pub filter: Option<FilterOptions>,
+    pub rename: Option<RenameOptions>,
+    pub sort: Option<SortOptions>,
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterOptions {
+    pub include: Option<String>,
+    pub exclude: Option<String>,
+    pub protocol: Option<String>,
+    pub server: Option<String>,
+    pub case_sensitive: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenameOptions {
+    pub prefix: Option<String>,
+    pub suffix: Option<String>,
+    pub replace: Option<String>,
+    pub with: Option<String>,
+    pub regex: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct SortOptions {
+    pub by: Option<String>,
+    pub desc: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -103,6 +148,7 @@ pub fn capabilities() -> CapabilitiesResponse {
             schemes: vec!["ss", "vmess", "vless", "trojan", "hysteria2", "hy2"],
             native: true,
         },
+        processors: vec!["dedupe", "filter", "rename", "sort", "limit"],
         exporters: vec![
             "json",
             "uri-list",
