@@ -7,16 +7,54 @@ use url::Url;
 use super::model::{ParseResponse, ParseStats, ProxyNode, ProxyProtocol};
 
 pub fn parse_subscription(content: &str) -> ParseResponse {
+    if let Some(nodes) = parse_structured_subscription(content) {
+        return dedupe_nodes(nodes, content.lines().count().max(1));
+    }
+
     let expanded = expand_subscription_content(content);
+    parse_uri_lines(expanded)
+}
+
+fn dedupe_nodes(nodes: Vec<ProxyNode>, input_lines: usize) -> ParseResponse {
     let mut warnings = Vec::new();
     let mut stats = ParseStats {
-        input_lines: expanded.len(),
+        input_lines,
+        ..ParseStats::default()
+    };
+    let mut seen = HashSet::new();
+    let mut deduped_nodes = Vec::new();
+
+    for node in nodes {
+        let key = node_key(&node);
+        if seen.insert(key) {
+            stats.parsed += 1;
+            deduped_nodes.push(node);
+        } else {
+            stats.deduped += 1;
+        }
+    }
+
+    if deduped_nodes.is_empty() {
+        warnings.push("no supported structured proxies found".to_string());
+    }
+
+    ParseResponse {
+        nodes: deduped_nodes,
+        stats,
+        warnings,
+    }
+}
+
+fn parse_uri_lines(lines: Vec<String>) -> ParseResponse {
+    let mut warnings = Vec::new();
+    let mut stats = ParseStats {
+        input_lines: lines.len(),
         ..ParseStats::default()
     };
     let mut seen = HashSet::new();
     let mut nodes = Vec::new();
 
-    for line in expanded {
+    for line in lines {
         match parse_proxy_uri(&line) {
             Some(node) => {
                 let key = node_key(&node);
@@ -41,6 +79,221 @@ pub fn parse_subscription(content: &str) -> ParseResponse {
         stats,
         warnings,
     }
+}
+
+fn parse_structured_subscription(content: &str) -> Option<Vec<ProxyNode>> {
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    if let Ok(value) = serde_json::from_str::<Value>(trimmed) {
+        if let Some(nodes) = parse_sing_box_json(&value) {
+            return Some(nodes);
+        }
+        if let Some(nodes) = parse_clash_value(&value) {
+            return Some(nodes);
+        }
+    }
+
+    let yaml_value = serde_yaml::from_str::<serde_yaml::Value>(trimmed).ok()?;
+    let value = serde_json::to_value(yaml_value).ok()?;
+    parse_clash_value(&value)
+}
+
+fn parse_clash_value(value: &Value) -> Option<Vec<ProxyNode>> {
+    let proxies = value.get("proxies")?.as_array()?;
+    Some(
+        proxies
+            .iter()
+            .filter_map(parse_clash_proxy)
+            .collect::<Vec<_>>(),
+    )
+}
+
+fn parse_sing_box_json(value: &Value) -> Option<Vec<ProxyNode>> {
+    let outbounds = value.get("outbounds")?.as_array()?;
+    Some(
+        outbounds
+            .iter()
+            .filter_map(parse_sing_box_outbound)
+            .collect::<Vec<_>>(),
+    )
+}
+
+fn parse_clash_proxy(value: &Value) -> Option<ProxyNode> {
+    let type_name = value.get("type")?.as_str()?;
+    let protocol = protocol_from_clash_type(type_name)?;
+    let server = string_field(value, "server")?;
+    let port = u16_field(value, "port")?;
+    let name = string_field(value, "name").unwrap_or_else(|| server.clone());
+    let cipher = string_field(value, "cipher");
+    let password = string_field(value, "password")
+        .or_else(|| string_field(value, "private-key"))
+        .or_else(|| string_field(value, "psk"));
+    let uuid = string_field(value, "uuid").or_else(|| string_field(value, "id"));
+    let network = string_field(value, "network");
+    let tls = bool_field(value, "tls");
+    let mut params = BTreeMap::new();
+
+    for key in ["sni", "servername", "peer"] {
+        if let Some(value) = string_field(value, key) {
+            params.insert(key.to_string(), value);
+        }
+    }
+
+    if let Some(ws_opts) = value.get("ws-opts") {
+        if let Some(path) = string_field(ws_opts, "path") {
+            params.insert("path".to_string(), path);
+        }
+        if let Some(host) = ws_opts.get("headers").and_then(|headers| {
+            string_field(headers, "Host").or_else(|| string_field(headers, "host"))
+        }) {
+            params.insert("host".to_string(), host);
+        }
+    }
+
+    Some(ProxyNode {
+        id: stable_id(
+            &protocol,
+            &server,
+            port,
+            uuid.as_deref().or(password.as_deref()).unwrap_or(""),
+        ),
+        name,
+        protocol,
+        server,
+        port,
+        username: None,
+        password,
+        uuid,
+        cipher,
+        network,
+        tls,
+        params,
+        source: serde_json::to_string(value).unwrap_or_default(),
+    })
+}
+
+fn parse_sing_box_outbound(value: &Value) -> Option<ProxyNode> {
+    let type_name = value.get("type")?.as_str()?;
+    let protocol = protocol_from_sing_box_type(type_name)?;
+    let server = string_field(value, "server")?;
+    let port = u16_field(value, "server_port")?;
+    let name = string_field(value, "tag").unwrap_or_else(|| server.clone());
+    let cipher = string_field(value, "method").or_else(|| string_field(value, "security"));
+    let password = string_field(value, "password")
+        .or_else(|| string_field(value, "private_key"))
+        .or_else(|| string_field(value, "pre_shared_key"));
+    let uuid = string_field(value, "uuid");
+    let mut params = BTreeMap::new();
+    let tls = value
+        .get("tls")
+        .and_then(|tls| bool_field(tls, "enabled"))
+        .or_else(|| match protocol {
+            ProxyProtocol::Trojan | ProxyProtocol::Hysteria2 => Some(true),
+            _ => None,
+        });
+
+    if let Some(tls_obj) = value.get("tls") {
+        if let Some(server_name) = string_field(tls_obj, "server_name") {
+            params.insert("sni".to_string(), server_name);
+        }
+    }
+
+    let network = value
+        .get("transport")
+        .and_then(|transport| string_field(transport, "type"));
+    if let Some(transport) = value.get("transport") {
+        if let Some(path) = string_field(transport, "path") {
+            params.insert("path".to_string(), path);
+        }
+    }
+
+    Some(ProxyNode {
+        id: stable_id(
+            &protocol,
+            &server,
+            port,
+            uuid.as_deref().or(password.as_deref()).unwrap_or(""),
+        ),
+        name,
+        protocol,
+        server,
+        port,
+        username: None,
+        password,
+        uuid,
+        cipher,
+        network,
+        tls,
+        params,
+        source: serde_json::to_string(value).unwrap_or_default(),
+    })
+}
+
+fn protocol_from_clash_type(type_name: &str) -> Option<ProxyProtocol> {
+    match type_name {
+        "ss" => Some(ProxyProtocol::Shadowsocks),
+        "ssr" => Some(ProxyProtocol::ShadowsocksR),
+        "vmess" => Some(ProxyProtocol::Vmess),
+        "vless" => Some(ProxyProtocol::Vless),
+        "trojan" => Some(ProxyProtocol::Trojan),
+        "hysteria" => Some(ProxyProtocol::Hysteria),
+        "hysteria2" | "hy2" => Some(ProxyProtocol::Hysteria2),
+        "http" => Some(ProxyProtocol::Http),
+        "socks5" | "socks" => Some(ProxyProtocol::Socks5),
+        "snell" => Some(ProxyProtocol::Snell),
+        "tuic" => Some(ProxyProtocol::Tuic),
+        "anytls" => Some(ProxyProtocol::AnyTls),
+        "wireguard" => Some(ProxyProtocol::WireGuard),
+        "ssh" => Some(ProxyProtocol::Ssh),
+        _ => None,
+    }
+}
+
+fn protocol_from_sing_box_type(type_name: &str) -> Option<ProxyProtocol> {
+    match type_name {
+        "shadowsocks" => Some(ProxyProtocol::Shadowsocks),
+        "shadowsocksr" => Some(ProxyProtocol::ShadowsocksR),
+        "vmess" => Some(ProxyProtocol::Vmess),
+        "vless" => Some(ProxyProtocol::Vless),
+        "trojan" => Some(ProxyProtocol::Trojan),
+        "hysteria" => Some(ProxyProtocol::Hysteria),
+        "hysteria2" => Some(ProxyProtocol::Hysteria2),
+        "http" => Some(ProxyProtocol::Http),
+        "socks" | "socks5" => Some(ProxyProtocol::Socks5),
+        "tuic" => Some(ProxyProtocol::Tuic),
+        "anytls" => Some(ProxyProtocol::AnyTls),
+        "wireguard" => Some(ProxyProtocol::WireGuard),
+        "ssh" => Some(ProxyProtocol::Ssh),
+        _ => None,
+    }
+}
+
+fn string_field(value: &Value, key: &str) -> Option<String> {
+    value.get(key).and_then(|value| {
+        value
+            .as_str()
+            .map(str::to_string)
+            .or_else(|| value.as_u64().map(|n| n.to_string()))
+            .or_else(|| value.as_i64().map(|n| n.to_string()))
+            .or_else(|| value.as_bool().map(|b| b.to_string()))
+    })
+}
+
+fn u16_field(value: &Value, key: &str) -> Option<u16> {
+    parse_json_port(value.get(key)?)
+}
+
+fn bool_field(value: &Value, key: &str) -> Option<bool> {
+    value.get(key).and_then(|value| {
+        value.as_bool().or_else(|| {
+            value
+                .as_str()
+                .map(|s| matches!(s, "true" | "1" | "tls" | "enabled"))
+        })
+    })
 }
 
 fn expand_subscription_content(content: &str) -> Vec<String> {
@@ -345,5 +598,61 @@ mod tests {
         assert_eq!(parsed.stats.deduped, 1);
         assert_eq!(parsed.nodes[0].name, "SG");
         assert_eq!(parsed.nodes[0].tls, Some(true));
+    }
+
+    #[test]
+    fn parses_clash_yaml_proxies() {
+        let parsed = parse_subscription(
+            r#"
+proxies:
+  - name: HK
+    type: ss
+    server: example.com
+    port: 8388
+    cipher: aes-128-gcm
+    password: secret
+  - name: SG
+    type: trojan
+    server: sg.example.com
+    port: 443
+    password: pass
+    sni: sni.example.com
+"#,
+        );
+        assert_eq!(parsed.stats.parsed, 2);
+        assert_eq!(parsed.nodes[0].cipher.as_deref(), Some("aes-128-gcm"));
+        assert_eq!(
+            parsed.nodes[1].params.get("sni").map(String::as_str),
+            Some("sni.example.com")
+        );
+    }
+
+    #[test]
+    fn parses_sing_box_outbounds() {
+        let parsed = parse_subscription(
+            r#"
+{
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "VMess",
+      "server": "vmess.example.com",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "security": "auto",
+      "tls": { "enabled": true, "server_name": "tls.example.com" },
+      "transport": { "type": "ws", "path": "/ws" }
+    }
+  ]
+}
+"#,
+        );
+        assert_eq!(parsed.stats.parsed, 1);
+        assert_eq!(parsed.nodes[0].name, "VMess");
+        assert_eq!(parsed.nodes[0].network.as_deref(), Some("ws"));
+        assert_eq!(
+            parsed.nodes[0].params.get("path").map(String::as_str),
+            Some("/ws")
+        );
     }
 }

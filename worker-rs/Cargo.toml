@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 console_error_panic_hook = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+serde_yaml = "*"
 base64 = "*"
 url = "*"
 worker = "*"

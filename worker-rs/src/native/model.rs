@@ -68,10 +68,19 @@ pub struct ProxyNode {
 #[serde(rename_all = "kebab-case")]
 pub enum ProxyProtocol {
     Shadowsocks,
+    ShadowsocksR,
     Vmess,
     Vless,
     Trojan,
+    Hysteria,
     Hysteria2,
+    Http,
+    Socks5,
+    Snell,
+    Tuic,
+    AnyTls,
+    WireGuard,
+    Ssh,
 }
 
 #[derive(Debug, Default, Clone, Serialize)]
@@ -85,10 +94,31 @@ pub struct ParseStats {
 pub fn capabilities() -> CapabilitiesResponse {
     CapabilitiesResponse {
         parser: ParserCapabilities {
-            inputs: vec!["plain-uri-list", "base64-uri-list"],
+            inputs: vec![
+                "plain-uri-list",
+                "base64-uri-list",
+                "clash-yaml",
+                "sing-box-json",
+            ],
             schemes: vec!["ss", "vmess", "vless", "trojan", "hysteria2", "hy2"],
             native: true,
         },
-        exporters: vec!["json", "uri-list", "clash", "sing-box"],
+        exporters: vec![
+            "json",
+            "uri-list",
+            "v2ray",
+            "clash",
+            "clash-meta",
+            "mihomo",
+            "stash",
+            "sing-box",
+            "surge",
+            "surge-mac",
+            "loon",
+            "quantumult-x",
+            "shadowrocket",
+            "surfboard",
+            "egern",
+        ],
     }
 }

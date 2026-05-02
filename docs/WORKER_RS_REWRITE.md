@@ -19,9 +19,9 @@ Implemented in `worker-rs/src/lib.rs`:
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
 - Native parser model for URI subscription lists
-- Native parsing for `ss`, `vmess`, `vless`, `trojan`, `hysteria2`/`hy2`
+- Native parsing for `ss`, `ssr`, `vmess`, `vless`, `trojan`, `hysteria`, `hysteria2`/`hy2`, `http`, `socks5`, `snell`, `tuic`, `anytls`, `wireguard`, and `ssh` where the input format exposes enough shared fields
 - Whole-subscription base64 decode and node dedupe
-- Native export targets: `json`, `uri-list`, `clash`, `sing-box`
+- Native export targets: `json`, `uri-list`, `v2ray`, `clash`, `clash-meta`, `mihomo`, `stash`, `sing-box`, `surge`, `surge-mac`, `loon`, `quantumult-x`, `shadowrocket`, `surfboard`, and `egern`
 
 This is intentionally scoped. It gives Cloudflare Git builds a real Rust Worker target and starts replacing upstream's format normalization with typed Rust code without pretending the whole Sub-Store runtime has already been ported.
 
@@ -56,7 +56,7 @@ Content-Type: application/json
 {"target":"uri-list","content":"trojan://pass@example.com:443?security=tls&type=tcp#SG"}
 ```
 
-Supported `target` values are currently `json`, `uri-list`, `clash`, and `sing-box`.
+Supported `target` values are currently `json`, `uri-list`, `v2ray`, `clash`, `clash-meta`, `mihomo`, `stash`, `sing-box`, `surge`, `surge-mac`, `loon`, `quantumult-x`, `shadowrocket`, `surfboard`, and `egern`.
 
 ## Cloudflare-native target
 
