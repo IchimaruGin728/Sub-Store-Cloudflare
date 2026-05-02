@@ -6,6 +6,7 @@ sub-store
 sub-store*
 .vite
 worker-rs/target/
+worker-rs/build/
 worker-rs/Cargo.lock
 
 # Build output

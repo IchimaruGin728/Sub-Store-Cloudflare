@@ -1,9 +1,10 @@
 # worker-rs rewrite
 
-This repo now has two backend tracks:
+This repo now deploys the native Rust Worker first:
 
-- `src/` is the compatibility Worker. It runs current upstream Sub-Store with Cloudflare shims, Durable Objects, and QuickJS for user script execution.
-- `worker-rs/` is the native Cloudflare Worker target. It starts with Cloudflare-owned routes and should absorb Sub-Store behavior until the JS compatibility layer becomes optional.
+- `worker-rs/` is the active Cloudflare Worker target.
+- `src/` is legacy compatibility code parked for reference only and is not built by the root Wrangler config.
+- Root `wrangler.jsonc` is the only Wrangler config.
 
 ## Current worker-rs scope
 
@@ -17,16 +18,16 @@ Implemented in `worker-rs/src/lib.rs`:
 
 This is intentionally small. It gives Cloudflare Git builds a real Rust Worker target without pretending the whole Sub-Store runtime has already been ported.
 
-## Why QuickJS still exists
+## QuickJS status
 
-Sub-Store upstream supports user-defined scripts and operators. Cloudflare Workers reject `eval()` and `new Function()`, so the compatibility Worker currently runs those scripts through QuickJS WASM.
+Sub-Store upstream supports user-defined scripts and operators. Cloudflare Workers reject `eval()` and `new Function()`. This repo previously carried a QuickJS WASM compatibility layer, but the current deploy path does not build or ship it.
 
-The native Rust path should reduce QuickJS usage in this order:
+The native Rust path should handle script-like behavior in this order:
 
 1. Port subscription parsing, filtering, renaming, sorting, and export rendering to Rust.
 2. Replace common script operators with typed Rust operators.
-3. Keep QuickJS only as an optional trusted fallback for custom scripts.
-4. Remove QuickJS when the remaining official features have native Rust equivalents or a deliberate unsupported status.
+3. Add a constrained transform DSL for custom rules.
+4. Consider QuickJS only as an explicit trusted fallback if native Rust coverage is not enough.
 
 ## Cloudflare-native target
 
@@ -59,9 +60,9 @@ From `SaintWe/Sub-Store-Workers`:
 ## Build
 
 ```sh
-pnpm run build:worker-rs
+pnpm run build
 ```
 
-That command runs Wrangler in `worker-rs/` with a dry-run output. The native Worker uses `worker-rs/wrangler.jsonc`.
+That command runs the root Wrangler config. Wrangler builds `worker-rs/` and writes a dry-run output.
 
-Rust crate dependencies use Cargo wildcard requirements (`*`) because Cargo does not support an npm-style `latest` literal. `worker-rs/Cargo.lock` is ignored so each fresh build resolves the latest compatible crates. The production Worker still uses the compatibility build until the native Rust implementation covers the Sub-Store API surface.
+Rust crate dependencies use Cargo wildcard requirements (`*`) because Cargo does not support an npm-style `latest` literal. `worker-rs/Cargo.lock` is ignored so each fresh build resolves the latest compatible crates.

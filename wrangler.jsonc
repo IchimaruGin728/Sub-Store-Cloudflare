@@ -1,13 +1,13 @@
 {
     "$schema": "./node_modules/wrangler/config-schema.json",
     "name": "sub-store-cloudflare",
-    "main": "src/index.js",
+    "main": "worker-rs/build/worker/shim.mjs",
     "compatibility_date": "2026-05-02",
-    "compatibility_flags": ["nodejs_compat"],
+    "build": {
+        "command": "cd worker-rs && cargo install -q worker-build --force && worker-build --release"
+    },
     "vars": {
-        "DEBUG": false,
-        "SUB_STORE_BACKEND_CUSTOM_NAME": "Cloudflare Workers",
-        "SUB_STORE_BACKEND_CUSTOM_ICON": "https://cdn.jsdelivr.net/gh/IchimaruGin728/Sub-Store-Cloudflare@main/assets/cloudflare.svg"
+        "SUB_STORE_BACKEND_VERSION": "upstream-latest"
     },
     "secrets_store_secrets": [
         {
@@ -16,27 +16,6 @@
             "secret_name": "JWT_SECRET"
         }
     ],
-    "durable_objects": {
-        "bindings": [
-            {
-                "name": "INDEX_DO",
-                "class_name": "IndexDO"
-            },
-            {
-                "name": "USER_DO",
-                "class_name": "UserDO"
-            }
-        ]
-    },
-    "migrations": [
-        {
-            "tag": "v1",
-            "new_sqlite_classes": ["IndexDO", "UserDO"]
-        }
-    ],
-    "triggers": {
-        "crons": ["0 */6 * * *"]
-    },
     "observability": {
         "enabled": true
     }
