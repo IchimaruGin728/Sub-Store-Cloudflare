@@ -15,6 +15,52 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Sub-Store 源码路径
 const SUB_STORE_PATH = path.join(__dirname, 'sub-store/backend');
+const CLOUDFLARE_BACKEND_NAME = 'Cloudflare Workers';
+const CLOUDFLARE_BACKEND_ICON =
+    'https://cdn.jsdelivr.net/gh/IchimaruGin728/Sub-Store-Cloudflare@main/assets/cloudflare.svg';
+
+function buildCloudflareEnvModule() {
+    return `import { version as substoreVersion } from '../../package.json';
+
+const backend = ${JSON.stringify(CLOUDFLARE_BACKEND_NAME)};
+const icon = ${JSON.stringify(CLOUDFLARE_BACKEND_ICON)};
+
+export default {
+    backend,
+    version: substoreVersion,
+    feature: {
+        cloudflare: true,
+        worker: true,
+        workers: true,
+        pages: true,
+        surge: false,
+    },
+    meta: {
+        env: typeof $environment !== 'undefined' ? $environment : undefined,
+        worker: {
+            runtime: 'Cloudflare Workers',
+            adapter: 'Sub-Store Cloudflare',
+            icon,
+        },
+        cloudflare: {
+            runtime: 'workerd',
+            compute: ['Workers', 'Pages', 'Durable Objects', 'Queues', 'Workflows'],
+            storage: ['D1', 'Durable Object Storage', 'R2', 'KV'],
+            ai: ['Workers AI', 'AI Gateway', 'Vectorize'],
+            media: ['Images', 'Stream'],
+            observability: ['Workers Logs', 'Analytics Engine'],
+        },
+    },
+    icon,
+    isCloudflare: true,
+    isWorker: true,
+    isWorkers: true,
+    isSurge: false,
+    isLoon: false,
+    isQuanX: false,
+    isNode: false,
+};`;
+}
 
 /**
  * Sub-Store 代码替换插件
@@ -26,6 +72,8 @@ function subStoreTransformPlugin() {
     let expressFileSeen = false;
     let openApiPatchApplied = 0;
     let openApiFileSeen = false;
+    let envPatchApplied = 0;
+    let envFileSeen = false;
     // fail-fast 统计：download.js 补丁必须命中且只命中一次
     let downloadPatchApplied = 0;
     let downloadFileSeen = false;
@@ -48,6 +96,12 @@ function subStoreTransformPlugin() {
             }
 
             let contents = code;
+
+            if (id.includes('sub-store/backend/src/utils/env.js')) {
+                envFileSeen = true;
+                envPatchApplied += 1;
+                return { code: buildCloudflareEnvModule(), map: null };
+            }
 
             // ============ Node.js 模块替换 ============
 
@@ -543,6 +597,11 @@ const tasks = {
             if (openApiFileSeen && openApiPatchApplied !== 1) {
                 this.error(
                     `[sub-store-transform] open-api.js 补丁未正确应用：期望 1 次，实际 ${openApiPatchApplied} 次`
+                );
+            }
+            if (envFileSeen && envPatchApplied !== 1) {
+                this.error(
+                    `[sub-store-transform] utils/env.js Cloudflare 标识补丁未正确应用：期望 1 次，实际 ${envPatchApplied} 次`
                 );
             }
 

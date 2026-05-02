@@ -5,6 +5,7 @@ node_modules/
 sub-store
 sub-store*
 .vite
+worker-rs/target/
 
 # Build output
 dist/
@@ -18,7 +19,6 @@ src/adapters/quickjs/wasm/*.wasm.map.txt
 # Wrangler
 .wrangler/
 .dev.vars
-wrangler.toml
 
 # Lock files (use your own package manager)
 bun.lock
