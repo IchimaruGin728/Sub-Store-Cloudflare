@@ -1,9 +1,0 @@
-name = "sub-store-cloudflare-rs"
-main = "build/worker/shim.mjs"
-compatibility_date = "2026-05-02"
-
-[build]
-command = "cargo install -q worker-build --locked || true && worker-build --release"
-
-[vars]
-SUB_STORE_BACKEND_VERSION = "upstream-latest"

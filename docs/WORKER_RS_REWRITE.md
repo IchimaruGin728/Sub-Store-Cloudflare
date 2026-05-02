@@ -58,7 +58,9 @@ From `SaintWe/Sub-Store-Workers`:
 ## Build
 
 ```sh
-bun run build:worker-rs
+pnpm run build:worker-rs
 ```
 
-That command runs Wrangler in `worker-rs/` with a dry-run output. The production Worker still uses the compatibility build until the native Rust implementation covers the Sub-Store API surface.
+That command runs Wrangler in `worker-rs/` with a dry-run output. The native Worker uses `worker-rs/wrangler.jsonc`.
+
+Rust crate dependencies use Cargo wildcard requirements (`*`) because Cargo does not support an npm-style `latest` literal. `worker-rs/Cargo.lock` is ignored so each fresh build resolves the latest compatible crates. The production Worker still uses the compatibility build until the native Rust implementation covers the Sub-Store API surface.

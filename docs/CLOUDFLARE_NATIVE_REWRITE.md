@@ -65,6 +65,7 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 
 1. Stabilize current deploy path.
    - Use latest toolchain packages.
+   - Use `wrangler.jsonc` only. Do not keep TOML Wrangler config.
    - Keep upstream sync as a safety net.
    - Let Cloudflare Git integrations build/deploy Workers and Pages.
    - Keep GitHub Actions limited to upstream release monitoring and version marker commits.
@@ -100,6 +101,7 @@ GitHub Actions does not deploy this project. It only monitors upstream latest re
 Workers:
 
 - Build command: `bash scripts/build-worker.sh`
+- Config file: `wrangler.jsonc`
 - Secret: configure `JWT_SECRET` in the Cloudflare Worker project
 
 Pages:

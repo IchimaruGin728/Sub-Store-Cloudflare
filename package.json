@@ -5,16 +5,16 @@
     "type": "module",
     "scripts": {
         "prepare:quickjs-wasm": "bash scripts/copy-quickjs-wasm.sh",
-        "dev": "npm run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",
-        "build": "npm run prepare:quickjs-wasm && vite build",
+        "dev": "pnpm run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",
+        "build": "pnpm run prepare:quickjs-wasm && vite build",
         "build:worker": "bash scripts/build-worker.sh",
-        "build:worker-rs": "cd worker-rs && npx wrangler deploy --dry-run --outdir dist",
+        "build:worker-rs": "cd worker-rs && pnpm exec wrangler deploy --dry-run --outdir dist",
         "build:pages": "bash scripts/build-pages-frontend.sh",
-        "preview": "npm run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
+        "preview": "pnpm run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
         "fetch:substore": "bash scripts/fetch-substore.sh",
-        "install:backend": "cd sub-store/backend && (command -v bun >/dev/null 2>&1 && bun install --ignore-scripts || pnpm install)",
-        "deploy:local": "npm run prepare:quickjs-wasm && npx wrangler deploy",
-        "tail": "npx wrangler tail --format=pretty"
+        "install:backend": "cd sub-store/backend && pnpm install",
+        "deploy:local": "pnpm run prepare:quickjs-wasm && pnpm exec wrangler deploy",
+        "tail": "pnpm exec wrangler tail --format=pretty"
     },
     "devDependencies": {
         "@cloudflare/vite-plugin": "latest",
