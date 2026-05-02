@@ -16,6 +16,8 @@ import path from 'node:path';
 import { Buffer } from 'node:buffer';
 import streamPromises from 'node:stream/promises';
 
+const CLOUDFLARE_ICON_URL = 'https://cdn.jsdelivr.net/gh/IchimaruGin728/Sub-Store-Cloudflare@main/assets/cloudflare.svg';
+
 function parseUserSettings(user) {
     try {
         const userData = JSON.parse(user?.data || '{}');
@@ -101,6 +103,10 @@ function setupGlobalsForSubStore(env, userSettings, ctx) {
     globalThis.$environment = {
         'surge-version': userSettings?.surgeVersion || '5.0.0',
         'surge-build': userSettings?.surgeBuild || '2000',
+        backend: 'Cloudflare Workers',
+        runtime: 'workerd',
+        'cloudflare-worker': 'Sub-Store Cloudflare',
+        'cloudflare-icon': CLOUDFLARE_ICON_URL,
         language: 'zh-Hans',
     };
 
@@ -127,7 +133,7 @@ async function sendBarkNotification(config, title, subtitle, content) {
         isArchive: '1',
         sound: 'shake',
         level: 'timeSensitive',
-        icon: 'https://raw.githubusercontent.com/58xinian/icon/master/Sub-Store1.png',
+        icon: CLOUDFLARE_ICON_URL,
     });
 
     const url = `${baseUrl}/${encodeURIComponent(deviceKey)}/${encodeURIComponent(fullTitle)}/${encodeURIComponent(content)}?${params.toString()}`;

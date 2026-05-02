@@ -6,6 +6,7 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 
 - Single-user first. No multi-user admin panel, no tenant management, no role system.
 - Do not target official frontend compatibility. The frontend and backend can evolve together.
+- Public backend identity is Cloudflare Workers, not Surge. Surge compatibility is an internal upstream shim only.
 - Keep the Sub-Store workflows that matter: subscription sources, file snippets, sync tasks, processors, preview, share/export, cron refresh, logs, backups, and script-like transforms.
 - Prefer Cloudflare managed products whenever they make the implementation simpler, faster, or more reliable.
 - Keep syncing upstream Sub-Store releases only as a reference source during migration, not as the runtime foundation.
@@ -83,6 +84,14 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 5. Retire upstream runtime dependency.
    - Keep upstream sync only for reference tests and compatibility fixtures.
    - Remove Express/Sub-Store loader patches after parity is good enough.
+
+## Current Runtime Split
+
+- `src/` is the compatibility Worker. It still runs current upstream Sub-Store with Workers shims and Durable Objects.
+- The compatibility build replaces upstream `src/utils/env.js` so `/api/utils/env` returns `Cloudflare Workers` and the repo-owned Cloudflare icon.
+- The Worker still forces selected upstream runtime probes into a Surge-like internal path because current upstream Sub-Store code expects `$httpClient` and `$persistentStore` semantics.
+- `worker-rs/` is the native Rust Worker target. It currently owns Cloudflare identity/status routes and is where parsing, exporting, storage orchestration, and refresh pipelines should move.
+- QuickJS is used to run Sub-Store user scripts without `eval()` or `new Function()` in Workers. The Rust rewrite should replace common operators with typed native implementations first, then leave QuickJS as an optional fallback.
 
 ## Cloudflare Git Build Mode
 

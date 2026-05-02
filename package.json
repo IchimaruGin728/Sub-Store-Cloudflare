@@ -5,14 +5,15 @@
     "type": "module",
     "scripts": {
         "prepare:quickjs-wasm": "bash scripts/copy-quickjs-wasm.sh",
-        "dev": "bun run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",
-        "build": "bun run prepare:quickjs-wasm && vite build",
+        "dev": "npm run prepare:quickjs-wasm && vite dev --host 0.0.0.0 --port 3000",
+        "build": "npm run prepare:quickjs-wasm && vite build",
         "build:worker": "bash scripts/build-worker.sh",
+        "build:worker-rs": "cd worker-rs && npx wrangler deploy --dry-run --outdir dist",
         "build:pages": "bash scripts/build-pages-frontend.sh",
-        "preview": "bun run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
+        "preview": "npm run prepare:quickjs-wasm && vite preview --host 0.0.0.0 --port 3000",
         "fetch:substore": "bash scripts/fetch-substore.sh",
-        "install:backend": "cd sub-store/backend && bun install --ignore-scripts",
-        "deploy:local": "bun run prepare:quickjs-wasm && npx wrangler deploy",
+        "install:backend": "cd sub-store/backend && (command -v bun >/dev/null 2>&1 && bun install --ignore-scripts || pnpm install)",
+        "deploy:local": "npm run prepare:quickjs-wasm && npx wrangler deploy",
         "tail": "npx wrangler tail --format=pretty"
     },
     "devDependencies": {
