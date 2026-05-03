@@ -30,6 +30,12 @@ enum MaterializeKind {
     Artifact,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ExportSourceKind {
+    Subscription,
+    Collection,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum MaterializeAction {
     Export,
@@ -107,21 +113,11 @@ pub async fn handle_stored_export_request(
         return Response::ok(raw_resource_content(&item).await?);
     }
 
-    let item = match route.kind {
-        MaterializeKind::Subscription => {
-            get_required_item(&db, "subscriptions", &route.name).await?
-        }
-        MaterializeKind::Collection => get_required_item(&db, "collections", &route.name).await?,
-        _ => return Response::error("Not Found", 404),
-    };
-
-    let default_target = string_field(&item, &["target", "type", "platform"]);
     let target = request_target
         .as_deref()
         .or(query_target.as_deref())
         .or(route.target.as_deref())
-        .or(default_target.as_deref())
-        .unwrap_or("json");
+        .map(str::to_string);
     let processors = request_processors.or_else(|| {
         request_processor
             .as_ref()
@@ -131,41 +127,38 @@ pub async fn handle_stored_export_request(
                     .as_ref()
                     .and_then(processor_options_from_value)
             })
-            .or_else(|| processor_options_from_item(&item))
     });
 
-    let content = match route.kind {
-        MaterializeKind::Subscription => subscription_content(&item).await?,
-        MaterializeKind::Collection => collection_content(&db, &item).await?,
-        _ => unreachable!(),
-    };
-    let exported = export_subscription_with_processors(&content, Some(target), processors.as_ref());
-
     if route.action == MaterializeAction::Artifact {
-        let artifact_name = request_artifact
-            .as_deref()
-            .or(request_name.as_deref())
-            .or(query_artifact.as_deref())
-            .map(str::to_string)
-            .unwrap_or_else(|| format!("{}-{}", route.name, target));
-        validate_store_key("artifact", &artifact_name)?;
-        let artifact = json!({
-            "name": artifact_name,
-            "sourceKind": route.kind.as_str(),
-            "sourceName": route.name,
-            "target": exported.target,
-            "content": exported.content,
-            "stats": exported.stats,
-            "warnings": exported.warnings,
-            "generatedAt": Date::now().as_millis().to_string()
-        });
-        let record = upsert_record(&db, "artifacts", &artifact_name, artifact).await?;
+        let source_kind = export_source_kind(route.kind)?;
+        let (artifact_name, artifact) = materialize_saved_export(
+            &db,
+            source_kind,
+            &route.name,
+            target.as_deref(),
+            processors.as_ref(),
+            request_artifact
+                .as_deref()
+                .or(request_name.as_deref())
+                .or(query_artifact.as_deref()),
+        )
+        .await?;
         return Response::from_json(&ArtifactWriteResponse {
             ok: true,
             artifact: artifact_name,
-            item: record.value,
+            item: artifact,
         });
     }
+
+    let source_kind = export_source_kind(route.kind)?;
+    let exported = export_saved_resource(
+        &db,
+        source_kind,
+        &route.name,
+        target.as_deref(),
+        processors.as_ref(),
+    )
+    .await?;
 
     if query_format.as_deref() == Some("raw") {
         Response::ok(exported.content)
@@ -176,6 +169,57 @@ pub async fn handle_stored_export_request(
 
 pub fn is_stored_export_path(path: &str) -> bool {
     materialize_route(path).ok().flatten().is_some()
+}
+
+pub async fn export_saved_resource(
+    db: &worker::d1::D1Database,
+    kind: ExportSourceKind,
+    name: &str,
+    target: Option<&str>,
+    processors: Option<&ProcessorOptions>,
+) -> Result<crate::native::model::ExportResponse> {
+    let item = get_required_item(db, kind.scope(), name).await?;
+    let default_target = string_field(&item, &["target", "type", "platform"]);
+    let target = target.or(default_target.as_deref()).unwrap_or("json");
+    let processors = processors
+        .cloned()
+        .or_else(|| processor_options_from_item(&item));
+    let content = match kind {
+        ExportSourceKind::Subscription => subscription_content(&item).await?,
+        ExportSourceKind::Collection => collection_content(db, &item).await?,
+    };
+    Ok(export_subscription_with_processors(
+        &content,
+        Some(target),
+        processors.as_ref(),
+    ))
+}
+
+pub async fn materialize_saved_export(
+    db: &worker::d1::D1Database,
+    kind: ExportSourceKind,
+    name: &str,
+    target: Option<&str>,
+    processors: Option<&ProcessorOptions>,
+    artifact_name: Option<&str>,
+) -> Result<(String, Value)> {
+    let exported = export_saved_resource(db, kind, name, target, processors).await?;
+    let artifact_name = artifact_name
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("{}-{}", name, exported.target));
+    validate_store_key("artifact", &artifact_name)?;
+    let artifact = json!({
+        "name": artifact_name,
+        "sourceKind": kind.as_str(),
+        "sourceName": name,
+        "target": exported.target,
+        "content": exported.content,
+        "stats": exported.stats,
+        "warnings": exported.warnings,
+        "generatedAt": Date::now().as_millis().to_string()
+    });
+    let record = upsert_record(db, "artifacts", &artifact_name, artifact).await?;
+    Ok((artifact_name, record.value))
 }
 
 fn materialize_route(path: &str) -> Result<Option<MaterializeRoute>> {
@@ -240,6 +284,14 @@ fn materialize_route(path: &str) -> Result<Option<MaterializeRoute>> {
         }));
     }
     Ok(None)
+}
+
+fn export_source_kind(kind: MaterializeKind) -> Result<ExportSourceKind> {
+    match kind {
+        MaterializeKind::Subscription => Ok(ExportSourceKind::Subscription),
+        MaterializeKind::Collection => Ok(ExportSourceKind::Collection),
+        _ => Err(Error::RustError("resource is not exportable".to_string())),
+    }
 }
 
 async fn get_required_item(db: &worker::d1::D1Database, scope: &str, name: &str) -> Result<Value> {
@@ -432,13 +484,18 @@ fn token_record_matches(record: &Value, token: &str) -> bool {
         .any(|key| record.get(*key).and_then(Value::as_str) == Some(token))
 }
 
-impl MaterializeKind {
-    fn as_str(&self) -> &'static str {
+impl ExportSourceKind {
+    pub fn scope(&self) -> &'static str {
         match self {
-            MaterializeKind::Subscription => "subscription",
-            MaterializeKind::Collection => "collection",
-            MaterializeKind::File => "file",
-            MaterializeKind::Artifact => "artifact",
+            ExportSourceKind::Subscription => "subscriptions",
+            ExportSourceKind::Collection => "collections",
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ExportSourceKind::Subscription => "subscription",
+            ExportSourceKind::Collection => "collection",
         }
     }
 }
