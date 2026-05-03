@@ -126,7 +126,15 @@ pub async fn is_owner(req: &Request, env: &Env) -> Result<bool> {
         .headers()
         .get("authorization")?
         .and_then(|value| value.strip_prefix("Bearer ").map(str::to_string))
-        .or_else(|| req.headers().get("x-sub-store-token").ok().flatten());
+        .or_else(|| req.headers().get("x-sub-store-token").ok().flatten())
+        .or_else(|| {
+            req.url().ok().and_then(|url| {
+                url.query_pairs().find_map(|(key, value)| {
+                    matches!(key.as_ref(), "token" | "key" | "sub-store-token")
+                        .then(|| value.into_owned())
+                })
+            })
+        });
 
     Ok(auth.as_deref() == Some(expected.as_str()))
 }

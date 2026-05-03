@@ -7,7 +7,7 @@
 在 Cloudflare Workers 上运行 Sub-Store Cloudflare，并逐步迁移到 `worker-rs` 原生 Rust 实现。
 
 > [!IMPORTANT]
-> 项目方向已经调整为 **单用户、Cloudflare-native、独立实现**。当前部署入口已经切到 `worker-rs`，前端/dashboard 代码已经移除，旧 JS compatibility Worker 暂时只作为迁移参考。详细路线见 [Cloudflare Native Rewrite](docs/CLOUDFLARE_NATIVE_REWRITE.md)。
+> 项目方向已经调整为 **单用户、Cloudflare-native、独立实现**。当前部署入口已经切到 `worker-rs`，前端/dashboard 和旧 JS compatibility Worker 已经移除。详细路线见 [Cloudflare Native Rewrite](docs/CLOUDFLARE_NATIVE_REWRITE.md)。
 
 ## 特性
 
@@ -20,17 +20,17 @@
 - ✅ `worker-rs/` 原生 Rust Worker 路线已成为当前部署入口
 - ✅ 每天 SGT 07:28 / 17:16 自动检查上游更新
 
-### 为什么从 D1 换到 Durable Objects
+### 当前状态存储
 
-Workers 会在多实例下并发处理请求。为了兼容 Sub-Store 的原有存储模型（单用户数据聚合在一条记录中），同一时刻多个请求对同一用户执行“读-改-写”时，若没有额外的版本控制/锁机制，在 D1 中容易出现后写覆盖先写（丢更新）。Durable Objects 按 Object ID 提供单活实例与串行处理能力，更适合这种高冲突写入场景，因此能更稳地保证单用户数据一致性。
+当前实现优先使用 D1：`subscriptions`、`collections`、`files`、`artifacts`、`settings`、`tokens` 都是 D1 中的 first-class records。后续如果出现需要串行化的高冲突任务队列，再把 refresh/job coordination 放到 Durable Objects 或 Workflows。
 
 ---
 
 ## ⚠️ 功能限制
 
-- **worker-rs**: 当前部署入口，目前覆盖 env/status/health 路由。
-- **Sub-Store 核心功能**: 订阅 CRUD、解析、导出、刷新、脚本处理正在按 Rust 原生模型重写。
-- **QuickJS/Vite/官方前端**: 当前不参与 build/deploy。
+- **worker-rs**: 当前部署入口，覆盖 env/status/health、资源 CRUD、保存订阅导出、artifact materialize、远程订阅拉取、解析、处理器和多软件导出。
+- **Sub-Store 核心功能**: 订阅/组合/文件/artifact/settings/tokens 已按 Rust 原生模型重写；复杂脚本操作继续用 typed Rust operators 替代。
+- **QuickJS/Vite/官方前端**: 已从当前项目移除，不参与 build/deploy。
 
 ---
 

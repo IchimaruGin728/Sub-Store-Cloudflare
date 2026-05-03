@@ -3,7 +3,7 @@
 This repo now deploys the native Rust Worker first:
 
 - `worker-rs/` is the active Cloudflare Worker target.
-- `src/` is legacy compatibility code parked for reference only and is not built by the root Wrangler config.
+- The old JS compatibility Worker and frontend/dashboard files have been removed from this repo.
 - Root `wrangler.jsonc` is the only Wrangler config.
 
 ## Current worker-rs scope
@@ -32,6 +32,8 @@ Implemented in `worker-rs/src/lib.rs`:
 - `DELETE /api/sub/:name`
 - `GET /api/sub/:name/export`
 - `POST /api/sub/:name/export`
+- `GET /api/sub/:name/:target`
+- `POST /api/sub/:name/artifact`
 - `GET /api/collections`
 - `POST /api/collections`
 - `PUT /api/collections`
@@ -40,18 +42,36 @@ Implemented in `worker-rs/src/lib.rs`:
 - `DELETE /api/collection/:name`
 - `GET /api/collection/:name/export`
 - `POST /api/collection/:name/export`
+- `GET /api/collection/:name/:target`
+- `POST /api/collection/:name/artifact`
 - `GET /api/files`
 - `POST /api/files`
 - `PUT /api/files`
 - `GET /api/file/:name`
 - `PATCH /api/file/:name`
 - `DELETE /api/file/:name`
+- `GET /api/file/:name/raw`
+- `POST /api/file/:name/raw`
 - `GET /api/artifacts`
 - `POST /api/artifacts`
 - `PUT /api/artifacts`
 - `GET /api/artifact/:name`
 - `PATCH /api/artifact/:name`
 - `DELETE /api/artifact/:name`
+- `GET /api/artifact/:name/raw`
+- `POST /api/artifact/:name/raw`
+- `GET /api/settings`
+- `POST /api/settings`
+- `PUT /api/settings`
+- `GET /api/setting/:name`
+- `PATCH /api/setting/:name`
+- `DELETE /api/setting/:name`
+- `GET /api/tokens`
+- `POST /api/tokens`
+- `PUT /api/tokens`
+- `GET /api/token/:name`
+- `PATCH /api/token/:name`
+- `DELETE /api/token/:name`
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
 - Native parser model for URI subscription lists
@@ -149,13 +169,19 @@ Content-Type: application/json
 {"name":"main","url":"https://example.com/sub","process":[{"type":"dedupe"}]}
 ```
 
-The implemented owner-only resources are `subscriptions`, `collections`, `files`, and `artifacts`. List endpoints use `/api/subs`, `/api/collections`, `/api/files`, and `/api/artifacts`; item endpoints use `/api/sub/:name`, `/api/collection/:name`, `/api/file/:name`, and `/api/artifact/:name`. `PUT` on a list endpoint replaces that resource scope, while `PATCH` on an item endpoint shallow-merges JSON fields.
+The implemented owner-only resources are `subscriptions`, `collections`, `files`, `artifacts`, `settings`, and `tokens`. List endpoints use `/api/subs`, `/api/collections`, `/api/files`, `/api/artifacts`, `/api/settings`, and `/api/tokens`; item endpoints use `/api/sub/:name`, `/api/collection/:name`, `/api/file/:name`, `/api/artifact/:name`, `/api/setting/:name`, and `/api/token/:name`. `PUT` on a list endpoint replaces that resource scope, while `PATCH` on an item endpoint shallow-merges JSON fields.
 
 Saved subscriptions and collections can be exported directly:
 
 ```http
 GET /api/sub/main/export?target=sing-box
 Authorization: Bearer <JWT_SECRET>
+```
+
+Subscription clients that cannot send headers can use the token query parameter and a short target path:
+
+```http
+GET /api/sub/main/sing-box?format=raw&token=<JWT_SECRET>
 ```
 
 ```http
@@ -166,7 +192,43 @@ Content-Type: application/json
 {"target":"clash","processors":{"dedupe":true,"sort":{"by":"name"}}}
 ```
 
-Subscription records may contain `content`, `source`, or `url`. Collection records may contain `subscriptions`, `subs`, `items`, `urls`, or `sources`; string entries are resolved as saved subscription names, remote URLs, or inline content in that order. Add `format=raw` to return only the exported text instead of the JSON export envelope.
+Subscription records may contain `content`, `source`, or `url`. Collection records may contain `subscriptions`, `subs`, `items`, `urls`, or `sources`; string entries are resolved as saved subscription names, remote URLs, or inline content in that order. Add `format=raw` to return only the exported text instead of the JSON export envelope. Auth accepts `Authorization: Bearer ...`, `x-sub-store-token`, or query `token`/`key`/`sub-store-token`.
+
+Resource CRUD still requires `JWT_SECRET_STORE`. Export/raw routes can also use saved read tokens from the `tokens` resource, so subscription clients do not need the owner secret:
+
+```http
+POST /api/tokens
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"name":"phone","token":"client-read-token","enabled":true}
+```
+
+Processors can be stored as the native object shape or as an upstream-style array:
+
+```json
+{
+  "process": [
+    { "type": "dedupe" },
+    { "type": "filter", "include": "SG|HK" },
+    { "type": "rename", "prefix": "[CF] " },
+    { "type": "sort", "by": "name" },
+    { "type": "limit", "limit": 50 }
+  ]
+}
+```
+
+Saved exports can also be materialized into the `artifacts` resource:
+
+```http
+POST /api/sub/main/artifact
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"name":"main-sing-box","target":"sing-box","processors":{"dedupe":true}}
+```
+
+Generated artifacts store `sourceKind`, `sourceName`, `target`, `content`, `stats`, `warnings`, and `generatedAt` in D1. Use `/api/artifact/:name/raw` to read only the generated content. Saved `files` and `artifacts` can expose raw content through `/api/file/:name/raw` and `/api/artifact/:name/raw`; records may contain `content`, `source`, or `url`.
 
 The low-level D1 store remains available for internal/native records. `scope` maps to resource types such as `subscriptions`, `collections`, `files`, `artifacts`, `tokens`, and `settings`. All store and resource routes require the `JWT_SECRET_STORE` secret via either `Authorization: Bearer ...` or `x-sub-store-token`.
 

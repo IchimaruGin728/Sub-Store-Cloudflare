@@ -70,9 +70,16 @@ pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Respons
 fn is_resource_path(path: &str) -> bool {
     matches!(
         path,
-        "/api/subs" | "/api/collections" | "/api/files" | "/api/artifacts"
+        "/api/subs"
+            | "/api/collections"
+            | "/api/files"
+            | "/api/artifacts"
+            | "/api/settings"
+            | "/api/tokens"
     ) || path.starts_with("/api/sub/")
         || path.starts_with("/api/collection/")
         || path.starts_with("/api/file/")
         || path.starts_with("/api/artifact/")
+        || path.starts_with("/api/setting/")
+        || path.starts_with("/api/token/")
 }

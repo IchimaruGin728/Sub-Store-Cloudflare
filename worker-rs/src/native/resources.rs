@@ -162,6 +162,8 @@ fn resource_route(path: &str) -> Result<Option<ResourceRoute>> {
         ),
         ("file", "files", "/api/files", "/api/file/"),
         ("artifact", "artifacts", "/api/artifacts", "/api/artifact/"),
+        ("setting", "settings", "/api/settings", "/api/setting/"),
+        ("token", "tokens", "/api/tokens", "/api/token/"),
     ];
 
     for (kind, scope, list_path, item_prefix) in routes {

@@ -88,7 +88,7 @@ This project is moving away from "run upstream Sub-Store on Workers" toward a Cl
 ## Current Runtime Split
 
 - `worker-rs/` is the current deploy target. Root `wrangler.jsonc` builds it directly.
-- `src/` is legacy compatibility code parked for reference only. It is not used by the current build/deploy path.
+- The old `src/` JS compatibility Worker has been removed. The current build/deploy path is the Rust Worker in `worker-rs/`.
 - Vite, Pages, React, and QuickJS are not part of the current deploy path.
 - Rust should own parsing, exporting, storage orchestration, and refresh pipelines.
 
