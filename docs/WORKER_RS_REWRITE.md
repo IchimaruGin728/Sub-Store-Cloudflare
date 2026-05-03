@@ -24,6 +24,30 @@ Implemented in `worker-rs/src/lib.rs`:
 - `GET /api/native/store/:scope/:name`
 - `PUT /api/native/store/:scope/:name`
 - `DELETE /api/native/store/:scope/:name`
+- `GET /api/subs`
+- `POST /api/subs`
+- `PUT /api/subs`
+- `GET /api/sub/:name`
+- `PATCH /api/sub/:name`
+- `DELETE /api/sub/:name`
+- `GET /api/collections`
+- `POST /api/collections`
+- `PUT /api/collections`
+- `GET /api/collection/:name`
+- `PATCH /api/collection/:name`
+- `DELETE /api/collection/:name`
+- `GET /api/files`
+- `POST /api/files`
+- `PUT /api/files`
+- `GET /api/file/:name`
+- `PATCH /api/file/:name`
+- `DELETE /api/file/:name`
+- `GET /api/artifacts`
+- `POST /api/artifacts`
+- `PUT /api/artifacts`
+- `GET /api/artifact/:name`
+- `PATCH /api/artifact/:name`
+- `DELETE /api/artifact/:name`
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
 - Native parser model for URI subscription lists
@@ -111,7 +135,19 @@ Content-Type: application/json
 {"value":{"name":"main","url":"https://example.com/sub"}}
 ```
 
-The D1 store is intentionally generic at this stage. `scope` maps to future first-class resource types such as `subscriptions`, `collections`, `files`, `artifacts`, `tokens`, and `settings`. All store routes require the `JWT_SECRET_STORE` secret via either `Authorization: Bearer ...` or `x-sub-store-token`.
+First-class Sub-Store resource records are now backed by that same D1 table:
+
+```http
+POST /api/subs
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"name":"main","url":"https://example.com/sub","process":[{"type":"dedupe"}]}
+```
+
+The implemented owner-only resources are `subscriptions`, `collections`, `files`, and `artifacts`. List endpoints use `/api/subs`, `/api/collections`, `/api/files`, and `/api/artifacts`; item endpoints use `/api/sub/:name`, `/api/collection/:name`, `/api/file/:name`, and `/api/artifact/:name`. `PUT` on a list endpoint replaces that resource scope, while `PATCH` on an item endpoint shallow-merges JSON fields.
+
+The low-level D1 store remains available for internal/native records. `scope` maps to resource types such as `subscriptions`, `collections`, `files`, `artifacts`, `tokens`, and `settings`. All store and resource routes require the `JWT_SECRET_STORE` secret via either `Authorization: Bearer ...` or `x-sub-store-token`.
 
 ## Cloudflare-native target
 

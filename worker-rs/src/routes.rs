@@ -7,6 +7,7 @@ use crate::native::model::{
 };
 use crate::native::parser::parse_subscription;
 use crate::native::process::process_subscription;
+use crate::native::resources::handle_resource_request;
 use crate::native::store::handle_store_request;
 use worker::*;
 
@@ -17,6 +18,9 @@ pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Respons
     let path = url.path().to_string();
     if path == "/api/native/store/init" || path.starts_with("/api/native/store/") {
         return handle_store_request(req, &env, &path).await;
+    }
+    if is_resource_path(&path) {
+        return handle_resource_request(req, &env, &path).await;
     }
 
     match (req.method(), url.path()) {
@@ -58,6 +62,16 @@ pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Respons
         (Method::Get, "/health") => Response::ok("ok"),
         _ => Response::error("Not Found", 404),
     }
+}
+
+fn is_resource_path(path: &str) -> bool {
+    matches!(
+        path,
+        "/api/subs" | "/api/collections" | "/api/files" | "/api/artifacts"
+    ) || path.starts_with("/api/sub/")
+        || path.starts_with("/api/collection/")
+        || path.starts_with("/api/file/")
+        || path.starts_with("/api/artifact/")
 }
 
 async fn fetch_remote_subscription(url: &str) -> Result<String> {

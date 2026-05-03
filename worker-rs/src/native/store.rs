@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use worker::{query, Date, Env, Error, Method, Request, Response, Result};
 
-const STORE_DB_BINDING: &str = "SUB_STORE_DB";
+pub const STORE_DB_BINDING: &str = "SUB_STORE_DB";
 const JWT_SECRET_BINDING: &str = "JWT_SECRET_STORE";
 
 #[derive(Debug, Deserialize)]
@@ -21,11 +21,11 @@ struct StoreRow {
 
 #[derive(Debug, Serialize)]
 pub struct StoreRecord {
-    scope: String,
-    name: String,
-    value: Value,
-    created_at: String,
-    updated_at: String,
+    pub scope: String,
+    pub name: String,
+    pub value: Value,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -118,7 +118,7 @@ pub async fn handle_store_request(mut req: Request, env: &Env, path: &str) -> Re
     }
 }
 
-async fn is_owner(req: &Request, env: &Env) -> Result<bool> {
+pub async fn is_owner(req: &Request, env: &Env) -> Result<bool> {
     let Some(expected) = env.secret_store(JWT_SECRET_BINDING)?.get().await? else {
         return Ok(false);
     };
@@ -131,7 +131,7 @@ async fn is_owner(req: &Request, env: &Env) -> Result<bool> {
     Ok(auth.as_deref() == Some(expected.as_str()))
 }
 
-async fn ensure_schema(db: &worker::d1::D1Database) -> Result<()> {
+pub async fn ensure_schema(db: &worker::d1::D1Database) -> Result<()> {
     db.exec(
         r#"
 CREATE TABLE IF NOT EXISTS store_records (
@@ -150,7 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_store_records_scope_updated_at
     Ok(())
 }
 
-async fn list_records(db: &worker::d1::D1Database, scope: &str) -> Result<Vec<StoreRecord>> {
+pub async fn list_records(db: &worker::d1::D1Database, scope: &str) -> Result<Vec<StoreRecord>> {
     let result = query!(
         db,
         "SELECT scope, name, value, created_at, updated_at FROM store_records WHERE scope = ?1 ORDER BY updated_at DESC, name ASC",
@@ -161,7 +161,7 @@ async fn list_records(db: &worker::d1::D1Database, scope: &str) -> Result<Vec<St
     rows_to_records(result.results::<StoreRow>()?)
 }
 
-async fn get_record(
+pub async fn get_record(
     db: &worker::d1::D1Database,
     scope: &str,
     name: &str,
@@ -177,7 +177,7 @@ async fn get_record(
     row.map(row_to_record).transpose()
 }
 
-async fn upsert_record(
+pub async fn upsert_record(
     db: &worker::d1::D1Database,
     scope: &str,
     name: &str,
@@ -203,7 +203,7 @@ async fn upsert_record(
         .ok_or_else(|| Error::RustError("record was not written".to_string()))
 }
 
-async fn delete_record(db: &worker::d1::D1Database, scope: &str, name: &str) -> Result<bool> {
+pub async fn delete_record(db: &worker::d1::D1Database, scope: &str, name: &str) -> Result<bool> {
     let result = query!(
         db,
         "DELETE FROM store_records WHERE scope = ?1 AND name = ?2",
@@ -217,6 +217,16 @@ async fn delete_record(db: &worker::d1::D1Database, scope: &str, name: &str) -> 
         .and_then(|meta| meta.changes)
         .unwrap_or_default()
         > 0)
+}
+
+pub async fn delete_scope(db: &worker::d1::D1Database, scope: &str) -> Result<usize> {
+    let result = query!(db, "DELETE FROM store_records WHERE scope = ?1", scope,)?
+        .run()
+        .await?;
+    Ok(result
+        .meta()?
+        .and_then(|meta| meta.changes)
+        .unwrap_or_default())
 }
 
 fn rows_to_records(rows: Vec<StoreRow>) -> Result<Vec<StoreRecord>> {
@@ -233,7 +243,7 @@ fn row_to_record(row: StoreRow) -> Result<StoreRecord> {
     })
 }
 
-fn validate_store_key(label: &str, value: &str) -> Result<()> {
+pub fn validate_store_key(label: &str, value: &str) -> Result<()> {
     if value.is_empty() || value.len() > 128 {
         return Err(Error::RustError(format!(
             "{} must be between 1 and 128 characters",
@@ -252,7 +262,7 @@ fn validate_store_key(label: &str, value: &str) -> Result<()> {
     Ok(())
 }
 
-fn decode_path_segment(input: &str) -> String {
+pub fn decode_path_segment(input: &str) -> String {
     url::form_urlencoded::parse(input.as_bytes())
         .map(|(key, value)| {
             if value.is_empty() {
