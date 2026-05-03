@@ -42,6 +42,8 @@ struct WorkerMeta<'a> {
     runtime: &'a str,
     adapter: &'a str,
     icon: &'a str,
+    version: String,
+    upstream: UpstreamMeta,
 }
 
 #[derive(Serialize)]
@@ -54,12 +56,18 @@ struct CloudflareMeta {
 }
 
 #[derive(Serialize)]
+struct UpstreamMeta {
+    backend: String,
+}
+
+#[derive(Serialize)]
 pub struct WorkerStatus<'a> {
     ok: bool,
     backend: &'a str,
     adapter: &'a str,
     runtime: &'a str,
     version: String,
+    upstream: UpstreamMeta,
 }
 
 pub fn env_response(env: &Env) -> EnvResponse<'static> {
@@ -78,6 +86,10 @@ pub fn env_response(env: &Env) -> EnvResponse<'static> {
                 runtime: "Cloudflare Workers / worker-rs",
                 adapter: ADAPTER_NAME,
                 icon: ICON_URL,
+                version: cloudflare_version(env),
+                upstream: UpstreamMeta {
+                    backend: upstream_backend_version(env),
+                },
             },
             cloudflare: CloudflareMeta {
                 compute: vec![
@@ -108,6 +120,15 @@ pub fn worker_status(env: &Env) -> WorkerStatus<'static> {
         backend: BACKEND_NAME,
         adapter: ADAPTER_NAME,
         runtime: "workerd/worker-rs",
-        version: upstream_backend_version(env),
+        version: cloudflare_version(env),
+        upstream: UpstreamMeta {
+            backend: upstream_backend_version(env),
+        },
     }
+}
+
+fn cloudflare_version(env: &Env) -> String {
+    env.var("SUB_STORE_CLOUDFLARE_VERSION")
+        .map(|value| value.to_string())
+        .unwrap_or_else(|_| "dev".to_string())
 }
