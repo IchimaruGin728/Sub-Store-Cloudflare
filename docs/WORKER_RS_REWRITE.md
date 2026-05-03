@@ -19,6 +19,14 @@ Implemented in `worker-rs/src/lib.rs`:
 - `POST /api/native/export`
 - `POST /api/native/fetch/parse`
 - `POST /api/native/fetch/export`
+- `POST /api/refresh`
+- `POST /api/refresh/subscriptions`
+- `POST /api/refresh/collections`
+- `POST /api/sub/:name/refresh`
+- `POST /api/collection/:name/refresh`
+- `GET /api/backup`
+- `POST /api/backup`
+- `POST /api/backup/restore`
 - `POST /api/native/store/init`
 - `GET /api/native/store/:scope`
 - `GET /api/native/store/:scope/:name`
@@ -229,6 +237,37 @@ Content-Type: application/json
 ```
 
 Generated artifacts store `sourceKind`, `sourceName`, `target`, `content`, `stats`, `warnings`, and `generatedAt` in D1. Use `/api/artifact/:name/raw` to read only the generated content. Saved `files` and `artifacts` can expose raw content through `/api/file/:name/raw` and `/api/artifact/:name/raw`; records may contain `content`, `source`, or `url`.
+
+Refresh saved records into artifacts:
+
+```http
+POST /api/refresh
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"targets":["sing-box","clash"],"names":["main"],"subscriptions":true,"collections":false}
+```
+
+`/api/refresh/subscriptions`, `/api/refresh/collections`, `/api/sub/:name/refresh`, and `/api/collection/:name/refresh` narrow the scope. Records with `enabled: false` are skipped unless `includeDisabled` is true. If a record has `targets`, `target`, `type`, or `platform`, those targets are used when the request does not override them. Otherwise `json` is generated. Artifact names default to `<record-name>-<target>`, or can be overridden by a record `artifact` string or `artifacts` object keyed by target.
+
+The Worker also has Cloudflare Cron Triggers configured at UTC `23:28` and `09:16`, matching SGT `07:28` and `17:16`. The scheduled handler refreshes enabled subscriptions and collections through the same Rust path.
+
+Backup and restore all owner resources:
+
+```http
+GET /api/backup
+Authorization: Bearer <JWT_SECRET>
+```
+
+```http
+POST /api/backup/restore
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"replace":true,"resources":{"subscriptions":[{"name":"main","url":"https://example.com/sub"}]}}
+```
+
+Backups include `subscriptions`, `collections`, `files`, `artifacts`, `settings`, and `tokens`. Add repeated `scope` query parameters to export only selected scopes, for example `/api/backup?scope=subscriptions&scope=collections`.
 
 The low-level D1 store remains available for internal/native records. `scope` maps to resource types such as `subscriptions`, `collections`, `files`, `artifacts`, `tokens`, and `settings`. All store and resource routes require the `JWT_SECRET_STORE` secret via either `Authorization: Bearer ...` or `x-sub-store-token`.
 

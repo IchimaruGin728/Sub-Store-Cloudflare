@@ -1,6 +1,7 @@
 mod responses;
 mod runtime;
 
+use crate::native::backup::{handle_backup_request, is_backup_path};
 use crate::native::export::export_subscription_with_processors;
 use crate::native::materialize::{handle_stored_export_request, is_stored_export_path};
 use crate::native::model::{
@@ -8,6 +9,7 @@ use crate::native::model::{
 };
 use crate::native::parser::parse_subscription;
 use crate::native::process::process_subscription;
+use crate::native::refresh::{handle_refresh_request, is_refresh_path};
 use crate::native::remote::fetch_remote_subscription;
 use crate::native::resources::handle_resource_request;
 use crate::native::store::handle_store_request;
@@ -18,6 +20,12 @@ pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Respons
     let path = url.path().to_string();
     if path == "/api/native/store/init" || path.starts_with("/api/native/store/") {
         return handle_store_request(req, &env, &path).await;
+    }
+    if is_backup_path(&path) {
+        return handle_backup_request(req, &env, &path).await;
+    }
+    if is_refresh_path(&path) {
+        return handle_refresh_request(req, &env, &path).await;
     }
     if is_stored_export_path(&path) {
         return handle_stored_export_request(req, &env, &path).await;

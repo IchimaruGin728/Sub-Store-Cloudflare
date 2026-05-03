@@ -25,6 +25,12 @@
             "migrations_dir": "migrations"
         }
     ],
+    "triggers": {
+        "crons": [
+            "28 23 * * *",
+            "16 9 * * *"
+        ]
+    },
     "observability": {
         "enabled": true
     }
