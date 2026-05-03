@@ -87,7 +87,7 @@ Implemented in `worker-rs/src/lib.rs`:
 - Native parsing for common client line formats: Surge/Loon-style `Name = type, host, port, key=value` and Quantumult X-style `type=host:port,key=value,tag=Name`
 - Whole-subscription base64 decode and node dedupe
 - Native export targets: `json`, `uri-list`, `v2ray`, `clash`, `clash-meta`, `mihomo`, `stash`, `sing-box`, `surge`, `surge-mac`, `loon`, `quantumult-x`, `shadowrocket`, `surfboard`, and `egern`
-- Native no-script processors: `dedupe`, `filter`, `rename`, `sort`, and `limit`
+- Native no-script processors: `dedupe`, `filter`, `rename`, `flag`, `tag`, `sort`, `limit`, and `reverse`
 
 This is intentionally scoped. It gives Cloudflare Git builds a real Rust Worker target and starts replacing upstream's format normalization with typed Rust code without pretending the whole Sub-Store runtime has already been ported.
 
@@ -217,11 +217,14 @@ Processors can be stored as the native object shape or as an upstream-style arra
 ```json
 {
   "process": [
-    { "type": "dedupe" },
-    { "type": "filter", "include": "SG|HK" },
-    { "type": "rename", "prefix": "[CF] " },
+    { "type": "dedupe", "by": "server" },
+    { "type": "filter", "include": "SG|HK", "network": "grpc|ws", "tls": true },
+    { "type": "rename", "template": "{flag} {protocol} {name}" },
+    { "type": "flag", "position": "prefix" },
+    { "type": "tag", "protocol": true, "network": true, "tls": true, "position": "suffix" },
     { "type": "sort", "by": "name" },
-    { "type": "limit", "limit": 50 }
+    { "type": "limit", "limit": 50 },
+    { "type": "reverse" }
   ]
 }
 ```

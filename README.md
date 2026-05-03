@@ -29,7 +29,7 @@
 
 ## ⚠️ 功能限制
 
-- **worker-rs**: 当前部署入口，覆盖 env/status/health、资源 CRUD、保存订阅导出、artifact materialize、refresh、backup/restore、远程订阅拉取、解析、处理器和多软件导出。
+- **worker-rs**: 当前部署入口，覆盖 env/status/health、资源 CRUD、保存订阅导出、artifact materialize、refresh、backup/restore、远程订阅拉取、解析、typed processors 和多软件导出。
 - **Sub-Store 核心功能**: 订阅/组合/文件/artifact/settings/tokens 已按 Rust 原生模型重写；复杂脚本操作继续用 typed Rust operators 替代。
 - **QuickJS/Vite/官方前端**: 已从当前项目移除，不参与 build/deploy。
 

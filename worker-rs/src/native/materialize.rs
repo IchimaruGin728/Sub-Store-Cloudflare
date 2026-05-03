@@ -4,7 +4,9 @@ use serde_json::{json, Map, Value};
 use worker::{Date, Env, Error, Method, Request, Response, Result};
 
 use crate::native::export::export_subscription_with_processors;
-use crate::native::model::{FilterOptions, ProcessorOptions, RenameOptions, SortOptions};
+use crate::native::model::{
+    FilterOptions, FlagOptions, ProcessorOptions, RenameOptions, SortOptions, TagOptions,
+};
 use crate::native::remote::fetch_remote_subscription;
 use crate::native::store::{
     decode_path_segment, ensure_schema, get_record, is_owner, list_records, upsert_record,
@@ -396,12 +398,25 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
                     .unwrap_or_default();
                 let payload = Value::Object(without_type_keys(step));
                 match step_type {
-                    "dedupe" | "distinct" => options.dedupe = Some(true),
+                    "dedupe" | "distinct" => {
+                        options.dedupe = Some(true);
+                        options.dedupe_by = step
+                            .get("by")
+                            .or_else(|| step.get("dedupeBy"))
+                            .and_then(Value::as_str)
+                            .map(str::to_string);
+                    }
                     "filter" | "include" | "exclude" => {
                         options.filter = serde_json::from_value::<FilterOptions>(payload).ok()
                     }
                     "rename" | "rename-node" => {
                         options.rename = serde_json::from_value::<RenameOptions>(payload).ok()
+                    }
+                    "flag" | "country-flag" => {
+                        options.flag = serde_json::from_value::<FlagOptions>(payload).ok()
+                    }
+                    "tag" | "add-tag" => {
+                        options.tag = serde_json::from_value::<TagOptions>(payload).ok()
                     }
                     "sort" => options.sort = serde_json::from_value::<SortOptions>(payload).ok(),
                     "limit" | "slice" => {
@@ -412,6 +427,7 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
                             .and_then(Value::as_u64)
                             .map(|value| value as usize)
                     }
+                    "reverse" => options.reverse = Some(true),
                     _ => {}
                 }
             }

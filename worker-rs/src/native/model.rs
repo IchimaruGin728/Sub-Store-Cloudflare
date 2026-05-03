@@ -59,10 +59,15 @@ pub struct ExportResponse {
 #[serde(rename_all = "camelCase")]
 pub struct ProcessorOptions {
     pub dedupe: Option<bool>,
+    #[serde(rename = "dedupeBy")]
+    pub dedupe_by: Option<String>,
     pub filter: Option<FilterOptions>,
     pub rename: Option<RenameOptions>,
+    pub flag: Option<FlagOptions>,
+    pub tag: Option<TagOptions>,
     pub sort: Option<SortOptions>,
     pub limit: Option<usize>,
+    pub reverse: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -72,6 +77,8 @@ pub struct FilterOptions {
     pub exclude: Option<String>,
     pub protocol: Option<String>,
     pub server: Option<String>,
+    pub network: Option<String>,
+    pub tls: Option<bool>,
     pub case_sensitive: Option<bool>,
 }
 
@@ -83,6 +90,25 @@ pub struct RenameOptions {
     pub replace: Option<String>,
     pub with: Option<String>,
     pub regex: Option<bool>,
+    pub template: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FlagOptions {
+    pub enabled: Option<bool>,
+    pub position: Option<String>,
+    pub separator: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagOptions {
+    pub protocol: Option<bool>,
+    pub network: Option<bool>,
+    pub tls: Option<bool>,
+    pub separator: Option<String>,
+    pub position: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -170,7 +196,9 @@ pub fn capabilities() -> CapabilitiesResponse {
             ],
             native: true,
         },
-        processors: vec!["dedupe", "filter", "rename", "sort", "limit"],
+        processors: vec![
+            "dedupe", "filter", "rename", "flag", "tag", "sort", "limit", "reverse",
+        ],
         exporters: vec![
             "json",
             "uri-list",
