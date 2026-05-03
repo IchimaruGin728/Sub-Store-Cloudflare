@@ -2,8 +2,9 @@ name: Monitor Upstream Releases
 
 on:
   schedule:
-    # Weekly upstream sync: Monday 07:28 SGT (Sunday 23:28 UTC).
-    - cron: '28 23 * * 0'
+    # SGT 07:28 / 17:16 daily (UTC 23:28 / 09:16).
+    - cron: '28 23 * * *'
+    - cron: '16 9 * * *'
   workflow_dispatch:
 
 permissions:
@@ -47,7 +48,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json wrangler.jsonc .upstream/backend-version .upstream/frontend-version .upstream/cloudflare-version .upstream/metadata.json
-          git commit -m "chore(upstream): weekly sync Sub-Store updates"
+          git commit -m "chore(upstream): sync Sub-Store updates"
           git push
 
       - name: Summary

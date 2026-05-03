@@ -137,19 +137,55 @@ function getIsoWeek(year, month, day) {
   return Math.ceil(((local - weekYearStart) / 86_400_000 + 1) / 7);
 }
 
-function buildCloudflareVersion(date = new Date()) {
+function buildVersionBase(date = new Date()) {
   const { year, month, day } = getSingaporeDateParts(date);
   const week = getIsoWeek(year, month, day);
   const shortYear = String(year).slice(-2);
-  return `CF-${shortYear}W${String(week).padStart(2, '0')}`;
+  return {
+    shortYear: Number(shortYear),
+    week,
+    base: `${Number(shortYear)}.${week}`,
+  };
+}
+
+function parseCloudflareVersion(version) {
+  if (!version || version === 'none') return null;
+  let match = /^(\d{1,2})\.(\d{1,2})\.(\d+)$/.exec(version);
+  if (match) {
+    return {
+      shortYear: Number(match[1]),
+      week: Number(match[2]),
+      update: Number(match[3]),
+    };
+  }
+  match = /^CF-(\d{2})W(\d{2})$/.exec(version);
+  if (match) {
+    return {
+      shortYear: Number(match[1]),
+      week: Number(match[2]),
+      update: 0,
+    };
+  }
+  return null;
+}
+
+function buildCloudflareVersion({ date = new Date(), previousVersion, shouldIncrement }) {
+  const current = buildVersionBase(date);
+  const previous = parseCloudflareVersion(previousVersion);
+  const sameWeek =
+    previous &&
+    previous.shortYear === current.shortYear &&
+    previous.week === current.week;
+  const update = sameWeek ? previous.update + (shouldIncrement ? 1 : 0) : shouldIncrement ? 1 : 0;
+  return `${current.base}.${update}`;
 }
 
 function toSemverVersion(displayVersion) {
-  const match = /^CF-(\d{2})W(\d{2})$/.exec(displayVersion);
+  const match = /^(\d{1,2})\.(\d{1,2})\.(\d+)$/.exec(displayVersion);
   if (!match) {
     throw new Error(`Invalid Cloudflare version: ${displayVersion}`);
   }
-  return `${Number(match[1])}.${Number(match[2])}.0`;
+  return `${Number(match[1])}.${Number(match[2])}.${Number(match[3])}`;
 }
 
 async function updatePackageVersion(rootDir, version) {
@@ -196,8 +232,6 @@ async function main() {
   const metadataPath = path.join(upstreamDir, 'metadata.json');
   const checkedAt = new Date();
   const since = new Date(checkedAt.getTime() - ONE_WEEK_MS);
-  const cloudflareVersion = buildCloudflareVersion(checkedAt);
-  const packageVersion = toSemverVersion(cloudflareVersion);
 
   const [backend, frontend, backendRecent, frontendRecent] = await Promise.all([
     fetchLatestRelease(SUBSTORE_REPO),
@@ -214,6 +248,13 @@ async function main() {
 
   const backendChanged = backend.tagName !== previousBackend;
   const frontendChanged = frontend.tagName !== previousFrontend;
+  const upstreamChanged = backendChanged || frontendChanged;
+  const cloudflareVersion = buildCloudflareVersion({
+    date: checkedAt,
+    previousVersion: previousCloudflareVersion,
+    shouldIncrement: upstreamChanged,
+  });
+  const packageVersion = toSemverVersion(cloudflareVersion);
   const cloudflareVersionChanged = cloudflareVersion !== previousCloudflareVersion;
   const changed = backendChanged || frontendChanged || cloudflareVersionChanged;
 
@@ -232,6 +273,10 @@ async function main() {
         cloudflareVersion,
         packageVersion,
         previousCloudflareVersion,
+        versioning: {
+          scheme: 'YY.ISO_WEEK.UPDATE',
+          update: 'increments only when monitored upstream releases change in the same ISO week',
+        },
         recentWindow: {
           since: since.toISOString(),
           until: checkedAt.toISOString(),
