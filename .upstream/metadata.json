@@ -1,5 +1,13 @@
 {
-  "checkedAt": "2026-05-01T15:41:07.812Z",
+  "checkedAt": "2026-05-03T02:05:50.182Z",
+  "timezone": "Asia/Singapore",
+  "cloudflareVersion": "2026.05.18",
+  "packageVersion": "2026.5.18",
+  "previousCloudflareVersion": "2026.05.18",
+  "recentWindow": {
+    "since": "2026-04-26T02:05:50.182Z",
+    "until": "2026-05-03T02:05:50.182Z"
+  },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
     "tagName": "2.22.15",
@@ -13,6 +21,180 @@
     "name": "2.16.79",
     "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.79",
     "publishedAt": "2026-04-29T10:41:13Z"
+  },
+  "recent": {
+    "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.15",
+        "name": "2.22.15",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.15",
+        "publishedAt": "2026-05-01T09:34:22Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.14",
+        "name": "2.22.14",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.14",
+        "publishedAt": "2026-04-30T07:09:15Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.13",
+        "name": "2.22.13",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.13",
+        "publishedAt": "2026-04-29T02:54:50Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.11",
+        "name": "2.22.11",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.11",
+        "publishedAt": "2026-04-28T12:48:38Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.10",
+        "name": "2.22.10",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.10",
+        "publishedAt": "2026-04-28T07:56:42Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.9",
+        "name": "2.22.9",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.9",
+        "publishedAt": "2026-04-28T00:55:47Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.22.8",
+        "name": "2.22.8",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.8",
+        "publishedAt": "2026-04-27T03:59:52Z"
+      }
+    ],
+    "frontend": [
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.79",
+        "name": "2.16.79",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.79",
+        "publishedAt": "2026-04-29T10:41:13Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.78",
+        "name": "2.16.78",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.78",
+        "publishedAt": "2026-04-29T10:15:48Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.77",
+        "name": "2.16.77",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.77",
+        "publishedAt": "2026-04-29T07:40:09Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.76",
+        "name": "2.16.76",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.76",
+        "publishedAt": "2026-04-29T05:28:59Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.75",
+        "name": "2.16.75",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.75",
+        "publishedAt": "2026-04-29T03:20:54Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.74",
+        "name": "2.16.74",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.74",
+        "publishedAt": "2026-04-29T02:56:26Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.73",
+        "name": "2.16.73",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.73",
+        "publishedAt": "2026-04-29T00:35:45Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.72",
+        "name": "2.16.72",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.72",
+        "publishedAt": "2026-04-29T00:09:30Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.71",
+        "name": "2.16.71",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.71",
+        "publishedAt": "2026-04-28T13:28:32Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.70",
+        "name": "2.16.70",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.70",
+        "publishedAt": "2026-04-28T12:47:35Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.69",
+        "name": "2.16.69",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.69",
+        "publishedAt": "2026-04-28T12:28:11Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.68",
+        "name": "2.16.68",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.68",
+        "publishedAt": "2026-04-28T12:10:49Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.67",
+        "name": "2.16.67",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.67",
+        "publishedAt": "2026-04-28T08:02:34Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.66",
+        "name": "2.16.66",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.66",
+        "publishedAt": "2026-04-27T23:36:41Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.65",
+        "name": "2.16.65",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.65",
+        "publishedAt": "2026-04-27T22:34:44Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.64",
+        "name": "2.16.64",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.64",
+        "publishedAt": "2026-04-26T15:49:17Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.63",
+        "name": "2.16.63",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.63",
+        "publishedAt": "2026-04-26T15:34:13Z"
+      }
+    ]
   },
   "previous": {
     "backend": "2.22.15",

@@ -7,7 +7,8 @@
         "command": "cd worker-rs && cargo install -q worker-build --force && worker-build --release"
     },
     "vars": {
-        "SUB_STORE_BACKEND_VERSION": "upstream-latest"
+        "SUB_STORE_BACKEND_VERSION": "upstream-latest",
+        "SUB_STORE_CLOUDFLARE_VERSION": "2026.05.18"
     },
     "secrets_store_secrets": [
         {
