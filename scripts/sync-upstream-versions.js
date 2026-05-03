@@ -140,12 +140,16 @@ function getIsoWeek(year, month, day) {
 function buildCloudflareVersion(date = new Date()) {
   const { year, month, day } = getSingaporeDateParts(date);
   const week = getIsoWeek(year, month, day);
-  return `${year}.${String(month).padStart(2, '0')}.${String(week).padStart(2, '0')}`;
+  const shortYear = String(year).slice(-2);
+  return `CF-${shortYear}W${String(week).padStart(2, '0')}`;
 }
 
 function toSemverVersion(displayVersion) {
-  const [year, month, week] = displayVersion.split('.');
-  return `${Number(year)}.${Number(month)}.${Number(week)}`;
+  const match = /^CF-(\d{2})W(\d{2})$/.exec(displayVersion);
+  if (!match) {
+    throw new Error(`Invalid Cloudflare version: ${displayVersion}`);
+  }
+  return `${Number(match[1])}.${Number(match[2])}.0`;
 }
 
 async function updatePackageVersion(rootDir, version) {

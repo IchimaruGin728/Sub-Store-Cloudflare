@@ -1,12 +1,12 @@
 {
-  "checkedAt": "2026-05-03T02:05:50.182Z",
+  "checkedAt": "2026-05-03T02:12:12.199Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "2026.05.18",
-  "packageVersion": "2026.5.18",
+  "cloudflareVersion": "CF-26W18",
+  "packageVersion": "26.18.0",
   "previousCloudflareVersion": "2026.05.18",
   "recentWindow": {
-    "since": "2026-04-26T02:05:50.182Z",
-    "until": "2026-05-03T02:05:50.182Z"
+    "since": "2026-04-26T02:12:12.199Z",
+    "until": "2026-05-03T02:12:12.199Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",

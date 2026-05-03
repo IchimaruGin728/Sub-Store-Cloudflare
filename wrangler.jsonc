@@ -8,7 +8,7 @@
     },
     "vars": {
         "SUB_STORE_BACKEND_VERSION": "upstream-latest",
-        "SUB_STORE_CLOUDFLARE_VERSION": "2026.05.18"
+        "SUB_STORE_CLOUDFLARE_VERSION": "CF-26W18"
     },
     "secrets_store_secrets": [
         {
