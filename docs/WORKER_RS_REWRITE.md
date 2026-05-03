@@ -30,12 +30,16 @@ Implemented in `worker-rs/src/lib.rs`:
 - `GET /api/sub/:name`
 - `PATCH /api/sub/:name`
 - `DELETE /api/sub/:name`
+- `GET /api/sub/:name/export`
+- `POST /api/sub/:name/export`
 - `GET /api/collections`
 - `POST /api/collections`
 - `PUT /api/collections`
 - `GET /api/collection/:name`
 - `PATCH /api/collection/:name`
 - `DELETE /api/collection/:name`
+- `GET /api/collection/:name/export`
+- `POST /api/collection/:name/export`
 - `GET /api/files`
 - `POST /api/files`
 - `PUT /api/files`
@@ -146,6 +150,23 @@ Content-Type: application/json
 ```
 
 The implemented owner-only resources are `subscriptions`, `collections`, `files`, and `artifacts`. List endpoints use `/api/subs`, `/api/collections`, `/api/files`, and `/api/artifacts`; item endpoints use `/api/sub/:name`, `/api/collection/:name`, `/api/file/:name`, and `/api/artifact/:name`. `PUT` on a list endpoint replaces that resource scope, while `PATCH` on an item endpoint shallow-merges JSON fields.
+
+Saved subscriptions and collections can be exported directly:
+
+```http
+GET /api/sub/main/export?target=sing-box
+Authorization: Bearer <JWT_SECRET>
+```
+
+```http
+POST /api/collection/daily/export
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"target":"clash","processors":{"dedupe":true,"sort":{"by":"name"}}}
+```
+
+Subscription records may contain `content`, `source`, or `url`. Collection records may contain `subscriptions`, `subs`, `items`, `urls`, or `sources`; string entries are resolved as saved subscription names, remote URLs, or inline content in that order. Add `format=raw` to return only the exported text instead of the JSON export envelope.
 
 The low-level D1 store remains available for internal/native records. `scope` maps to resource types such as `subscriptions`, `collections`, `files`, `artifacts`, `tokens`, and `settings`. All store and resource routes require the `JWT_SECRET_STORE` secret via either `Authorization: Bearer ...` or `x-sub-store-token`.
 
