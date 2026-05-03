@@ -7,12 +7,18 @@ use crate::native::model::{
 };
 use crate::native::parser::parse_subscription;
 use crate::native::process::process_subscription;
+use crate::native::store::handle_store_request;
 use worker::*;
 
 const MAX_REMOTE_SUBSCRIPTION_BYTES: usize = 4 * 1024 * 1024;
 
 pub async fn handle(mut req: Request, env: Env, _ctx: Context) -> Result<Response> {
     let url = req.url()?;
+    let path = url.path().to_string();
+    if path == "/api/native/store/init" || path.starts_with("/api/native/store/") {
+        return handle_store_request(req, &env, &path).await;
+    }
+
     match (req.method(), url.path()) {
         (Method::Get, "/api/utils/env") => Response::from_json(&responses::env_response(&env)),
         (Method::Get, "/api/utils/worker-status") => {

@@ -17,6 +17,14 @@
             "secret_name": "JWT_SECRET"
         }
     ],
+    "d1_databases": [
+        {
+            "binding": "SUB_STORE_DB",
+            "database_name": "sub-store-cloudflare-db",
+            "database_id": "67cde9f2-8a13-43c5-9f9f-a068f44540ab",
+            "migrations_dir": "migrations"
+        }
+    ],
     "observability": {
         "enabled": true
     }
