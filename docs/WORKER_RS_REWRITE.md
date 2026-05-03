@@ -17,6 +17,8 @@ Implemented in `worker-rs/src/lib.rs`:
 - `POST /api/native/parse`
 - `POST /api/native/process`
 - `POST /api/native/export`
+- `POST /api/native/fetch/parse`
+- `POST /api/native/fetch/export`
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
 - Native parser model for URI subscription lists
@@ -73,6 +75,22 @@ Content-Type: application/json
   "processors": {
     "dedupe": true,
     "rename": { "prefix": "[CF] " },
+    "sort": { "by": "name" }
+  }
+}
+```
+
+Fetch a remote subscription URL at the edge, then parse or export it:
+
+```http
+POST /api/native/fetch/export
+Content-Type: application/json
+
+{
+  "url": "https://example.com/sub",
+  "target": "sing-box",
+  "processors": {
+    "dedupe": true,
     "sort": { "by": "name" }
   }
 }

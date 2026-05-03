@@ -19,6 +19,13 @@ pub struct ProcessRequest {
     pub processors: ProcessorOptions,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct RemoteSubscriptionRequest {
+    pub url: String,
+    pub target: Option<String>,
+    pub processors: Option<ProcessorOptions>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct CapabilitiesResponse {
     pub parser: ParserCapabilities,
