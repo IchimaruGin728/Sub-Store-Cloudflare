@@ -19,6 +19,11 @@ Implemented in `worker-rs/src/lib.rs`:
 - `POST /api/native/export`
 - `POST /api/native/fetch/parse`
 - `POST /api/native/fetch/export`
+- `POST /api/native/store/init`
+- `GET /api/native/store/:scope`
+- `GET /api/native/store/:scope/:name`
+- `PUT /api/native/store/:scope/:name`
+- `DELETE /api/native/store/:scope/:name`
 - Cloudflare identity metadata and icon
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
 - Native parser model for URI subscription lists
@@ -96,12 +101,25 @@ Content-Type: application/json
 }
 ```
 
+Store owner-only JSON records in D1:
+
+```http
+PUT /api/native/store/subscriptions/main
+Authorization: Bearer <JWT_SECRET>
+Content-Type: application/json
+
+{"value":{"name":"main","url":"https://example.com/sub"}}
+```
+
+The D1 store is intentionally generic at this stage. `scope` maps to future first-class resource types such as `subscriptions`, `collections`, `files`, `artifacts`, `tokens`, and `settings`. All store routes require the `JWT_SECRET_STORE` secret via either `Authorization: Bearer ...` or `x-sub-store-token`.
+
 ## Cloudflare-native target
 
 Use Cloudflare products directly instead of emulating a generic Node service:
 
 - Workers for request handling and frontend delivery if a static UI is reintroduced later.
 - Secrets Store for private runtime tokens and future provider/webhook tokens.
+- D1 binding `SUB_STORE_DB` for owner data, settings, and first-class Sub-Store records.
 - Durable Objects for per-user serial execution and strongly consistent state.
 - D1 for queryable metadata, audit entries, and settings.
 - R2 for large files such as GeoIP databases and generated artifacts.
