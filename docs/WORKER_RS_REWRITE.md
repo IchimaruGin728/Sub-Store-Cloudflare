@@ -21,6 +21,7 @@ Implemented in `worker-rs/src/lib.rs`:
 - upstream backend version via `SUB_STORE_BACKEND_VERSION`
 - Native parser model for URI subscription lists
 - Native parsing for `ss`, `ssr`, `vmess`, `vless`, `trojan`, `hysteria`, `hysteria2`/`hy2`, `http`, `socks5`, `snell`, `tuic`, `anytls`, `wireguard`, and `ssh` where the input format exposes enough shared fields
+- Native parsing for common client line formats: Surge/Loon-style `Name = type, host, port, key=value` and Quantumult X-style `type=host:port,key=value,tag=Name`
 - Whole-subscription base64 decode and node dedupe
 - Native export targets: `json`, `uri-list`, `v2ray`, `clash`, `clash-meta`, `mihomo`, `stash`, `sing-box`, `surge`, `surge-mac`, `loon`, `quantumult-x`, `shadowrocket`, `surfboard`, and `egern`
 - Native no-script processors: `dedupe`, `filter`, `rename`, `sort`, and `limit`
