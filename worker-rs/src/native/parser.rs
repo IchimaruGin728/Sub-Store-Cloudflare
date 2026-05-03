@@ -55,7 +55,7 @@ fn parse_uri_lines(lines: Vec<String>) -> ParseResponse {
     let mut nodes = Vec::new();
 
     for line in lines {
-        match parse_proxy_uri(&line) {
+        match parse_proxy_line(&line) {
             Some(node) => {
                 let key = node_key(&node);
                 if seen.insert(key) {
@@ -298,13 +298,13 @@ fn bool_field(value: &Value, key: &str) -> Option<bool> {
 
 fn expand_subscription_content(content: &str) -> Vec<String> {
     let direct = split_lines(content);
-    if direct.iter().any(|line| looks_like_proxy_uri(line)) {
+    if direct.iter().any(|line| looks_like_proxy_line(line)) {
         return direct;
     }
 
     if let Some(decoded) = decode_base64_text(content) {
         let decoded_lines = split_lines(&decoded);
-        if decoded_lines.iter().any(|line| looks_like_proxy_uri(line)) {
+        if decoded_lines.iter().any(|line| looks_like_proxy_line(line)) {
             return decoded_lines;
         }
     }
@@ -322,20 +322,32 @@ fn split_lines(content: &str) -> Vec<String> {
         .collect()
 }
 
-fn looks_like_proxy_uri(line: &str) -> bool {
-    matches!(
+fn looks_like_proxy_line(line: &str) -> bool {
+    let looks_like_uri = matches!(
         scheme_of(line),
         Some("ss")
             | Some("vmess")
             | Some("vless")
             | Some("trojan")
+            | Some("hysteria")
             | Some("hysteria2")
             | Some("hy2")
-    )
+            | Some("tuic")
+            | Some("anytls")
+            | Some("socks")
+            | Some("socks5")
+    );
+    looks_like_uri || looks_like_named_proxy_line(line) || looks_like_quantumult_x_line(line)
 }
 
 fn scheme_of(line: &str) -> Option<&str> {
     line.split_once("://").map(|(scheme, _)| scheme)
+}
+
+fn parse_proxy_line(line: &str) -> Option<ProxyNode> {
+    parse_proxy_uri(line)
+        .or_else(|| parse_named_proxy_line(line))
+        .or_else(|| parse_quantumult_x_line(line))
 }
 
 fn parse_proxy_uri(line: &str) -> Option<ProxyNode> {
@@ -344,7 +356,11 @@ fn parse_proxy_uri(line: &str) -> Option<ProxyNode> {
         "vmess" => parse_vmess(line),
         "vless" => parse_url_proxy(line, ProxyProtocol::Vless),
         "trojan" => parse_url_proxy(line, ProxyProtocol::Trojan),
+        "hysteria" => parse_url_proxy(line, ProxyProtocol::Hysteria),
         "hysteria2" | "hy2" => parse_url_proxy(line, ProxyProtocol::Hysteria2),
+        "tuic" => parse_url_proxy(line, ProxyProtocol::Tuic),
+        "anytls" => parse_url_proxy(line, ProxyProtocol::AnyTls),
+        "socks" | "socks5" => parse_url_proxy(line, ProxyProtocol::Socks5),
         _ => None,
     }
 }
@@ -363,12 +379,20 @@ fn parse_url_proxy(line: &str, protocol: ProxyProtocol) -> Option<ProxyNode> {
         .map(|value| matches!(value.as_str(), "tls" | "true" | "1"));
     let network = params.remove("type").or_else(|| params.remove("network"));
     let uuid = match protocol {
-        ProxyProtocol::Vless => username.clone(),
+        ProxyProtocol::Vless | ProxyProtocol::Tuic => username.clone(),
         _ => None,
     };
     let password = match protocol {
-        ProxyProtocol::Trojan | ProxyProtocol::Hysteria2 => username.clone().or(url_password),
+        ProxyProtocol::Trojan
+        | ProxyProtocol::Hysteria
+        | ProxyProtocol::Hysteria2
+        | ProxyProtocol::AnyTls => username.clone().or(url_password),
+        ProxyProtocol::Tuic => url_password,
         _ => url_password,
+    };
+    let node_username = match protocol {
+        ProxyProtocol::Socks5 => username.clone(),
+        _ => None,
     };
 
     Some(ProxyNode {
@@ -377,7 +401,7 @@ fn parse_url_proxy(line: &str, protocol: ProxyProtocol) -> Option<ProxyNode> {
         protocol,
         server,
         port,
-        username,
+        username: node_username,
         password,
         uuid,
         cipher: None,
@@ -386,6 +410,196 @@ fn parse_url_proxy(line: &str, protocol: ProxyProtocol) -> Option<ProxyNode> {
         params,
         source: line.to_string(),
     })
+}
+
+fn looks_like_named_proxy_line(line: &str) -> bool {
+    let Some((_, right)) = line.split_once('=') else {
+        return false;
+    };
+    let mut parts = right.split(',').map(str::trim);
+    parts.next().and_then(protocol_from_named_type).is_some()
+        && parts.next().is_some()
+        && parts.next().is_some()
+}
+
+fn parse_named_proxy_line(line: &str) -> Option<ProxyNode> {
+    let (name, right) = line.split_once('=')?;
+    let name = name.trim();
+    if name.is_empty() {
+        return None;
+    }
+    let parts = split_csvish(right);
+    if parts.len() < 3 {
+        return None;
+    }
+    let protocol = protocol_from_named_type(parts[0].as_str())?;
+    let server = clean_value(&parts[1]);
+    let port = clean_value(&parts[2]).parse().ok()?;
+    let options = parse_key_value_options(&parts[3..]);
+    node_from_options(protocol, name.to_string(), server, port, options, line)
+}
+
+fn looks_like_quantumult_x_line(line: &str) -> bool {
+    let Some((left, right)) = line.split_once('=') else {
+        return false;
+    };
+    protocol_from_quantumult_x_type(left.trim()).is_some() && right.contains(',')
+}
+
+fn parse_quantumult_x_line(line: &str) -> Option<ProxyNode> {
+    let (type_name, right) = line.split_once('=')?;
+    let protocol = protocol_from_quantumult_x_type(type_name.trim())?;
+    let parts = split_csvish(right);
+    if parts.is_empty() {
+        return None;
+    }
+    let (server, port) = parse_host_port(&parts[0])?;
+    let options = parse_key_value_options(&parts[1..]);
+    let name = options
+        .get("tag")
+        .cloned()
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| server.clone());
+    node_from_options(protocol, name, server, port, options, line)
+}
+
+fn protocol_from_named_type(type_name: &str) -> Option<ProxyProtocol> {
+    match type_name.trim().to_ascii_lowercase().as_str() {
+        "ss" | "shadowsocks" => Some(ProxyProtocol::Shadowsocks),
+        "ssr" | "shadowsocksr" => Some(ProxyProtocol::ShadowsocksR),
+        "vmess" => Some(ProxyProtocol::Vmess),
+        "vless" => Some(ProxyProtocol::Vless),
+        "trojan" => Some(ProxyProtocol::Trojan),
+        "hysteria" => Some(ProxyProtocol::Hysteria),
+        "hysteria2" | "hy2" => Some(ProxyProtocol::Hysteria2),
+        "http" | "https" => Some(ProxyProtocol::Http),
+        "socks" | "socks5" => Some(ProxyProtocol::Socks5),
+        "snell" => Some(ProxyProtocol::Snell),
+        "tuic" => Some(ProxyProtocol::Tuic),
+        "anytls" => Some(ProxyProtocol::AnyTls),
+        "wireguard" => Some(ProxyProtocol::WireGuard),
+        "ssh" => Some(ProxyProtocol::Ssh),
+        _ => None,
+    }
+}
+
+fn protocol_from_quantumult_x_type(type_name: &str) -> Option<ProxyProtocol> {
+    match type_name.trim().to_ascii_lowercase().as_str() {
+        "shadowsocks" | "ss" => Some(ProxyProtocol::Shadowsocks),
+        "vmess" => Some(ProxyProtocol::Vmess),
+        "trojan" => Some(ProxyProtocol::Trojan),
+        "http" => Some(ProxyProtocol::Http),
+        "socks5" | "socks" => Some(ProxyProtocol::Socks5),
+        _ => None,
+    }
+}
+
+fn node_from_options(
+    protocol: ProxyProtocol,
+    name: String,
+    server: String,
+    port: u16,
+    mut options: BTreeMap<String, String>,
+    source: &str,
+) -> Option<ProxyNode> {
+    let cipher = take_first(
+        &mut options,
+        &["encrypt-method", "method", "cipher", "security"],
+    );
+    let username = take_first(&mut options, &["username", "user"]);
+    let mut password = take_first(
+        &mut options,
+        &[
+            "password",
+            "passwd",
+            "pass",
+            "private-key",
+            "private_key",
+            "psk",
+        ],
+    );
+    let mut uuid = take_first(&mut options, &["uuid", "id"]);
+    if uuid.is_none() && matches!(protocol, ProxyProtocol::Vmess | ProxyProtocol::Vless) {
+        uuid = username.clone().or_else(|| password.clone());
+        if matches!(protocol, ProxyProtocol::Vmess) && password == uuid {
+            password = None;
+        }
+    }
+    if matches!(protocol, ProxyProtocol::Tuic) && uuid.is_none() {
+        uuid = username.clone();
+    }
+    let network = take_first(&mut options, &["network", "net", "obfs", "transport"]);
+    let tls = take_first(&mut options, &["tls", "over-tls", "security"])
+        .map(|value| matches!(value.as_str(), "true" | "1" | "tls" | "enabled"));
+    for alias in ["server_name", "server-name", "peer", "obfs-host"] {
+        if let Some(value) = options.remove(alias) {
+            options.insert("sni".to_string(), value);
+        }
+    }
+    let secret = uuid
+        .as_deref()
+        .or(password.as_deref())
+        .or(username.as_deref())
+        .unwrap_or("");
+
+    Some(ProxyNode {
+        id: stable_id(&protocol, &server, port, secret),
+        name,
+        protocol,
+        server,
+        port,
+        username,
+        password,
+        uuid,
+        cipher,
+        network,
+        tls,
+        params: options,
+        source: source.to_string(),
+    })
+}
+
+fn split_csvish(input: &str) -> Vec<String> {
+    input
+        .split(',')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .map(clean_value)
+        .collect()
+}
+
+fn parse_key_value_options(parts: &[String]) -> BTreeMap<String, String> {
+    parts
+        .iter()
+        .filter_map(|part| {
+            let (key, value) = part.split_once('=')?;
+            Some((key.trim().to_ascii_lowercase(), clean_value(value.trim())))
+        })
+        .collect()
+}
+
+fn parse_host_port(input: &str) -> Option<(String, u16)> {
+    let endpoint = clean_value(input);
+    let (host, port) = endpoint.rsplit_once(':')?;
+    Some((
+        host.trim_matches(['[', ']']).to_string(),
+        port.parse().ok()?,
+    ))
+}
+
+fn take_first(options: &mut BTreeMap<String, String>, keys: &[&str]) -> Option<String> {
+    keys.iter()
+        .find_map(|key| options.remove(*key))
+        .map(|value| clean_value(&value))
+        .filter(|value| !value.is_empty())
+}
+
+fn clean_value(input: &str) -> String {
+    input
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .to_string()
 }
 
 fn parse_shadowsocks(line: &str) -> Option<ProxyNode> {
@@ -654,5 +868,59 @@ proxies:
             parsed.nodes[0].params.get("path").map(String::as_str),
             Some("/ws")
         );
+    }
+
+    #[test]
+    fn parses_named_client_proxy_lines() {
+        let parsed = parse_subscription(
+            r#"
+HK = ss, example.com, 8388, encrypt-method=aes-128-gcm, password=secret
+SG = trojan, sg.example.com, 443, password=pass, sni=sni.example.com, tls=true
+"#,
+        );
+        assert_eq!(parsed.stats.parsed, 2);
+        assert_eq!(parsed.nodes[0].name, "HK");
+        assert_eq!(parsed.nodes[0].cipher.as_deref(), Some("aes-128-gcm"));
+        assert_eq!(parsed.nodes[1].tls, Some(true));
+        assert_eq!(
+            parsed.nodes[1].params.get("sni").map(String::as_str),
+            Some("sni.example.com")
+        );
+    }
+
+    #[test]
+    fn parses_quantumult_x_proxy_lines() {
+        let parsed = parse_subscription(
+            "shadowsocks=example.com:8388,method=aes-128-gcm,password=secret,tag=HK",
+        );
+        assert_eq!(parsed.stats.parsed, 1);
+        let node = &parsed.nodes[0];
+        assert_eq!(node.name, "HK");
+        assert_eq!(node.server, "example.com");
+        assert_eq!(node.port, 8388);
+        assert_eq!(node.cipher.as_deref(), Some("aes-128-gcm"));
+        assert_eq!(node.password.as_deref(), Some("secret"));
+    }
+
+    #[test]
+    fn parses_modern_uri_schemes() {
+        let parsed = parse_subscription(
+            [
+                "tuic://00000000-0000-0000-0000-000000000000:pass@example.com:443?sni=tuic.example.com#TUIC",
+                "anytls://pass@tls.example.com:443?sni=any.example.com#AnyTLS",
+                "hysteria://pass@hy.example.com:443?peer=hy.example.com#HY",
+            ]
+            .join("\n")
+            .as_str(),
+        );
+        assert_eq!(parsed.stats.parsed, 3);
+        assert_eq!(parsed.nodes[0].name, "TUIC");
+        assert_eq!(
+            parsed.nodes[0].uuid.as_deref(),
+            Some("00000000-0000-0000-0000-000000000000")
+        );
+        assert_eq!(parsed.nodes[0].password.as_deref(), Some("pass"));
+        assert_eq!(parsed.nodes[1].password.as_deref(), Some("pass"));
+        assert_eq!(parsed.nodes[2].password.as_deref(), Some("pass"));
     }
 }
