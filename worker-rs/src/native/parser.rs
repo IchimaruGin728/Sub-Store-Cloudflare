@@ -141,6 +141,27 @@ fn parse_clash_proxy(value: &Value) -> Option<ProxyNode> {
             params.insert(key.to_string(), value);
         }
     }
+    for key in [
+        "flow",
+        "alpn",
+        "client-fingerprint",
+        "fingerprint",
+        "fp",
+        "udp",
+    ] {
+        if let Some(value) = string_field(value, key) {
+            params.insert(key.to_string(), value);
+        }
+    }
+    if let Some(reality_opts) = value.get("reality-opts") {
+        if let Some(public_key) = string_field(reality_opts, "public-key") {
+            params.insert("pbk".to_string(), public_key);
+            params.insert("security".to_string(), "reality".to_string());
+        }
+        if let Some(short_id) = string_field(reality_opts, "short-id") {
+            params.insert("sid".to_string(), short_id);
+        }
+    }
 
     if let Some(ws_opts) = value.get("ws-opts") {
         if let Some(path) = string_field(ws_opts, "path") {
@@ -150,6 +171,14 @@ fn parse_clash_proxy(value: &Value) -> Option<ProxyNode> {
             string_field(headers, "Host").or_else(|| string_field(headers, "host"))
         }) {
             params.insert("host".to_string(), host);
+        }
+    }
+    if let Some(grpc_opts) = value.get("grpc-opts") {
+        if let Some(service_name) = string_field(grpc_opts, "grpc-service-name")
+            .or_else(|| string_field(grpc_opts, "serviceName"))
+            .or_else(|| string_field(grpc_opts, "service_name"))
+        {
+            params.insert("serviceName".to_string(), service_name);
         }
     }
 
@@ -199,6 +228,30 @@ fn parse_sing_box_outbound(value: &Value) -> Option<ProxyNode> {
         if let Some(server_name) = string_field(tls_obj, "server_name") {
             params.insert("sni".to_string(), server_name);
         }
+        if let Some(alpn) = tls_obj
+            .get("alpn")
+            .and_then(Value::as_array)
+            .and_then(|values| values.iter().find_map(Value::as_str).map(str::to_string))
+        {
+            params.insert("alpn".to_string(), alpn);
+        }
+        if let Some(fingerprint) = tls_obj
+            .get("utls")
+            .and_then(|utls| string_field(utls, "fingerprint"))
+        {
+            params.insert("fingerprint".to_string(), fingerprint);
+        }
+        if let Some(reality) = tls_obj.get("reality") {
+            if bool_field(reality, "enabled").unwrap_or(false) {
+                params.insert("security".to_string(), "reality".to_string());
+            }
+            if let Some(public_key) = string_field(reality, "public_key") {
+                params.insert("pbk".to_string(), public_key);
+            }
+            if let Some(short_id) = string_field(reality, "short_id") {
+                params.insert("sid".to_string(), short_id);
+            }
+        }
     }
 
     let network = value
@@ -208,6 +261,29 @@ fn parse_sing_box_outbound(value: &Value) -> Option<ProxyNode> {
         if let Some(path) = string_field(transport, "path") {
             params.insert("path".to_string(), path);
         }
+        if let Some(service_name) = string_field(transport, "service_name") {
+            params.insert("serviceName".to_string(), service_name);
+        }
+        if let Some(host) = transport
+            .get("headers")
+            .and_then(|headers| {
+                string_field(headers, "Host").or_else(|| string_field(headers, "host"))
+            })
+            .or_else(|| {
+                transport
+                    .get("host")
+                    .and_then(Value::as_array)
+                    .and_then(|values| values.iter().find_map(Value::as_str).map(str::to_string))
+            })
+        {
+            params.insert("host".to_string(), host);
+        }
+    }
+    if let Some(flow) = string_field(value, "flow") {
+        params.insert("flow".to_string(), flow);
+    }
+    if let Some(packet_encoding) = string_field(value, "packet_encoding") {
+        params.insert("packet_encoding".to_string(), packet_encoding);
     }
 
     Some(ProxyNode {
@@ -370,14 +446,18 @@ fn parse_url_proxy(line: &str, protocol: ProxyProtocol) -> Option<ProxyNode> {
     let server = url.host_str()?.to_string();
     let port = url.port_or_known_default()?;
     let name = fragment_or_host(&url);
-    let mut params = query_params(&url);
+    let params = query_params(&url);
     let username = non_empty_string(decode_percent(url.username()));
     let url_password = url.password().map(decode_percent);
     let tls = params
-        .remove("security")
-        .or_else(|| params.remove("tls"))
+        .get("security")
+        .cloned()
+        .or_else(|| params.get("tls").cloned())
         .map(|value| matches!(value.as_str(), "tls" | "true" | "1"));
-    let network = params.remove("type").or_else(|| params.remove("network"));
+    let network = params
+        .get("type")
+        .cloned()
+        .or_else(|| params.get("network").cloned());
     let uuid = match protocol {
         ProxyProtocol::Vless | ProxyProtocol::Tuic => username.clone(),
         _ => None,

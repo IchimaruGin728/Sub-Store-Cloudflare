@@ -79,15 +79,22 @@ fn export_clash_yaml(nodes: &[ProxyNode]) -> String {
                 push_yaml_opt(&mut out, "uuid", node.uuid.as_deref());
                 out.push_str("    alterId: 0\n");
                 push_yaml_opt(&mut out, "cipher", node.cipher.as_deref().or(Some("auto")));
-                if node.tls == Some(true) {
+                if node.tls == Some(true)
+                    || matches!(first_param(node, &["security"]), Some("reality"))
+                {
                     out.push_str("    tls: true\n");
                 }
+                push_clash_transport_opts(&mut out, node);
             }
             ProxyProtocol::Vless => {
                 push_yaml_opt(&mut out, "uuid", node.uuid.as_deref());
-                if node.tls == Some(true) {
+                push_yaml_opt(&mut out, "flow", first_param(node, &["flow"]));
+                if node.tls == Some(true)
+                    || matches!(first_param(node, &["security"]), Some("reality"))
+                {
                     out.push_str("    tls: true\n");
                 }
+                push_clash_transport_opts(&mut out, node);
             }
             ProxyProtocol::Trojan
             | ProxyProtocol::Hysteria
@@ -112,6 +119,18 @@ fn export_clash_yaml(nodes: &[ProxyNode]) -> String {
         push_yaml_opt(&mut out, "network", node.network.as_deref());
         if let Some(sni) = first_param(node, &["sni", "peer", "servername"]) {
             push_yaml_opt(&mut out, "sni", Some(sni));
+        }
+        push_yaml_opt(
+            &mut out,
+            "client-fingerprint",
+            first_param(node, &["fp", "fingerprint", "client-fingerprint"]),
+        );
+        if let Some(alpn) = first_param(node, &["alpn"]) {
+            out.push_str(&format!("    alpn:\n      - {}\n", yaml_string(alpn)));
+        }
+        push_clash_reality_opts(&mut out, node);
+        if is_truthy(first_param(node, &["udp"])) {
+            out.push_str("    udp: true\n");
         }
     }
     out
@@ -159,6 +178,12 @@ fn sing_box_outbound(node: &ProxyNode) -> Option<Value> {
         }
         ProxyProtocol::Vless => {
             outbound.insert("uuid".to_string(), Value::String(node.uuid.clone()?));
+            insert_string_opt(&mut outbound, "flow", first_param(node, &["flow"]));
+            insert_string_opt(
+                &mut outbound,
+                "packet_encoding",
+                first_param(node, &["packet_encoding", "packet-encoding"]),
+            );
             insert_tls(&mut outbound, node, false);
         }
         ProxyProtocol::Trojan => {
@@ -206,12 +231,7 @@ fn sing_box_outbound(node: &ProxyNode) -> Option<Value> {
     }
 
     if let Some(network) = &node.network {
-        if network == "ws" {
-            let mut transport = Map::new();
-            transport.insert("type".to_string(), Value::String("ws".to_string()));
-            if let Some(path) = first_param(node, &["path"]) {
-                transport.insert("path".to_string(), Value::String(path.to_string()));
-            }
+        if let Some(transport) = sing_box_transport(network, node) {
             outbound.insert("transport".to_string(), Value::Object(transport));
         }
     }
@@ -220,7 +240,10 @@ fn sing_box_outbound(node: &ProxyNode) -> Option<Value> {
 }
 
 fn insert_tls(outbound: &mut Map<String, Value>, node: &ProxyNode, default_enabled: bool) {
-    let enabled = node.tls.unwrap_or(default_enabled);
+    let security = first_param(node, &["security"]);
+    let enabled = node.tls.unwrap_or(default_enabled)
+        || matches!(security, Some("tls" | "reality"))
+        || first_param(node, &["pbk", "public-key", "reality-public-key"]).is_some();
     if !enabled {
         return;
     }
@@ -229,7 +252,149 @@ fn insert_tls(outbound: &mut Map<String, Value>, node: &ProxyNode, default_enabl
     if let Some(sni) = first_param(node, &["sni", "peer", "servername"]) {
         tls.insert("server_name".to_string(), Value::String(sni.to_string()));
     }
+    if let Some(alpn) = first_param(node, &["alpn"]) {
+        tls.insert(
+            "alpn".to_string(),
+            Value::Array(vec![Value::String(alpn.to_string())]),
+        );
+    }
+    if let Some(fingerprint) = first_param(node, &["fp", "fingerprint", "client-fingerprint"]) {
+        let mut utls = Map::new();
+        utls.insert(
+            "fingerprint".to_string(),
+            Value::String(fingerprint.to_string()),
+        );
+        tls.insert("utls".to_string(), Value::Object(utls));
+    }
+    if matches!(security, Some("reality"))
+        || first_param(node, &["pbk", "public-key", "reality-public-key"]).is_some()
+    {
+        let mut reality = Map::new();
+        reality.insert("enabled".to_string(), Value::Bool(true));
+        insert_string_opt(
+            &mut reality,
+            "public_key",
+            first_param(node, &["pbk", "public-key", "reality-public-key"]),
+        );
+        insert_string_opt(
+            &mut reality,
+            "short_id",
+            first_param(node, &["sid", "short-id", "short_id"]),
+        );
+        tls.insert("reality".to_string(), Value::Object(reality));
+    }
     outbound.insert("tls".to_string(), Value::Object(tls));
+}
+
+fn sing_box_transport(network: &str, node: &ProxyNode) -> Option<Map<String, Value>> {
+    let mut transport = Map::new();
+    match network {
+        "ws" | "websocket" => {
+            transport.insert("type".to_string(), Value::String("ws".to_string()));
+            insert_string_opt(&mut transport, "path", first_param(node, &["path"]));
+            if let Some(host) = first_param(node, &["host", "ws-host"]) {
+                let mut headers = Map::new();
+                headers.insert("Host".to_string(), Value::String(host.to_string()));
+                transport.insert("headers".to_string(), Value::Object(headers));
+            }
+        }
+        "grpc" | "gun" => {
+            transport.insert("type".to_string(), Value::String("grpc".to_string()));
+            insert_string_opt(
+                &mut transport,
+                "service_name",
+                first_param(
+                    node,
+                    &[
+                        "serviceName",
+                        "service-name",
+                        "service_name",
+                        "grpc-service-name",
+                    ],
+                ),
+            );
+        }
+        "http" | "h2" => {
+            transport.insert("type".to_string(), Value::String("http".to_string()));
+            insert_string_opt(&mut transport, "path", first_param(node, &["path"]));
+            if let Some(host) = first_param(node, &["host"]) {
+                transport.insert(
+                    "host".to_string(),
+                    Value::Array(vec![Value::String(host.to_string())]),
+                );
+            }
+        }
+        _ => return None,
+    }
+    Some(transport)
+}
+
+fn push_clash_transport_opts(out: &mut String, node: &ProxyNode) {
+    match node.network.as_deref() {
+        Some("ws" | "websocket") => {
+            out.push_str("    ws-opts:\n");
+            if let Some(path) = first_param(node, &["path"]) {
+                out.push_str(&format!("      path: {}\n", yaml_string(path)));
+            }
+            if let Some(host) = first_param(node, &["host", "ws-host"]) {
+                out.push_str("      headers:\n");
+                out.push_str(&format!("        Host: {}\n", yaml_string(host)));
+            }
+        }
+        Some("grpc" | "gun") => {
+            out.push_str("    grpc-opts:\n");
+            if let Some(service_name) = first_param(
+                node,
+                &[
+                    "serviceName",
+                    "service-name",
+                    "service_name",
+                    "grpc-service-name",
+                ],
+            ) {
+                out.push_str(&format!(
+                    "      grpc-service-name: {}\n",
+                    yaml_string(service_name)
+                ));
+            }
+        }
+        Some("http" | "h2") => {
+            out.push_str("    h2-opts:\n");
+            if let Some(path) = first_param(node, &["path"]) {
+                out.push_str(&format!("      path: {}\n", yaml_string(path)));
+            }
+            if let Some(host) = first_param(node, &["host"]) {
+                out.push_str("      host:\n");
+                out.push_str(&format!("        - {}\n", yaml_string(host)));
+            }
+        }
+        _ => {}
+    }
+}
+
+fn push_clash_reality_opts(out: &mut String, node: &ProxyNode) {
+    if !matches!(first_param(node, &["security"]), Some("reality"))
+        && first_param(node, &["pbk", "public-key", "reality-public-key"]).is_none()
+    {
+        return;
+    }
+    out.push_str("    reality-opts:\n");
+    if let Some(public_key) = first_param(node, &["pbk", "public-key", "reality-public-key"]) {
+        out.push_str(&format!("      public-key: {}\n", yaml_string(public_key)));
+    }
+    if let Some(short_id) = first_param(node, &["sid", "short-id", "short_id"]) {
+        out.push_str(&format!("      short-id: {}\n", yaml_string(short_id)));
+    }
+}
+
+fn insert_string_opt(map: &mut Map<String, Value>, key: &str, value: Option<&str>) {
+    if let Some(value) = value.filter(|value| !value.is_empty()) {
+        map.insert(key.to_string(), Value::String(value.to_string()));
+    }
+}
+
+fn is_truthy(value: Option<&str>) -> bool {
+    matches!(value, Some("true" | "1" | "yes" | "enabled"))
 }
 
 fn clash_type(node: &ProxyNode) -> &'static str {
@@ -412,6 +577,21 @@ fn named_common(node: &ProxyNode, type_name: &str) -> String {
     if node.tls == Some(true) {
         parts.push("tls=true".to_string());
     }
+    if let Some(sni) = first_param(node, &["sni", "peer", "servername"]) {
+        parts.push(format!("sni={}", sni));
+    }
+    if let Some(alpn) = first_param(node, &["alpn"]) {
+        parts.push(format!("alpn={}", alpn));
+    }
+    if let Some(fingerprint) = first_param(node, &["fp", "fingerprint", "client-fingerprint"]) {
+        parts.push(format!("client-fingerprint={}", fingerprint));
+    }
+    if let Some(path) = first_param(node, &["path"]) {
+        parts.push(format!("ws-path={}", path));
+    }
+    if let Some(host) = first_param(node, &["host", "ws-host"]) {
+        parts.push(format!("ws-headers=Host:{}", host));
+    }
     if let Some(network) = &node.network {
         parts.push(format!("network={}", network));
     }
@@ -532,6 +712,29 @@ mod tests {
             value["outbounds"][0]["tls"]["server_name"],
             "sg.example.com"
         );
+    }
+
+    #[test]
+    fn exports_reality_and_transport_options() {
+        let input = "vless://00000000-0000-0000-0000-000000000000@example.com:443?security=reality&sni=www.microsoft.com&fp=chrome&pbk=pubkey&sid=abcd&type=grpc&serviceName=sub&flow=xtls-rprx-vision#Reality";
+
+        let clash = export_subscription_with_processors(input, Some("mihomo"), None);
+        assert!(clash.content.contains("tls: true"));
+        assert!(clash.content.contains("flow: xtls-rprx-vision"));
+        assert!(clash.content.contains("client-fingerprint: chrome"));
+        assert!(clash.content.contains("reality-opts:"));
+        assert!(clash.content.contains("public-key: pubkey"));
+        assert!(clash.content.contains("grpc-service-name: sub"));
+
+        let sing_box = export_subscription_with_processors(input, Some("sing-box"), None);
+        let value: Value = serde_json::from_str(&sing_box.content).expect("valid json");
+        let outbound = &value["outbounds"][0];
+        assert_eq!(outbound["flow"], "xtls-rprx-vision");
+        assert_eq!(outbound["tls"]["reality"]["enabled"], true);
+        assert_eq!(outbound["tls"]["reality"]["public_key"], "pubkey");
+        assert_eq!(outbound["tls"]["utls"]["fingerprint"], "chrome");
+        assert_eq!(outbound["transport"]["type"], "grpc");
+        assert_eq!(outbound["transport"]["service_name"], "sub");
     }
 
     #[test]
