@@ -1,16 +1,16 @@
 {
-  "checkedAt": "2026-05-05T09:55:23.819Z",
+  "checkedAt": "2026-05-05T23:42:35.136Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.19.4",
-  "packageVersion": "26.19.4",
-  "previousCloudflareVersion": "26.19.3",
+  "cloudflareVersion": "26.19.5",
+  "packageVersion": "26.19.5",
+  "previousCloudflareVersion": "26.19.4",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-04-28T09:55:23.819Z",
-    "until": "2026-05-05T09:55:23.819Z"
+    "since": "2026-04-28T23:42:35.136Z",
+    "until": "2026-05-05T23:42:35.136Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
@@ -21,10 +21,10 @@
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
-    "tagName": "2.16.87",
-    "name": "2.16.87",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.87",
-    "publishedAt": "2026-05-05T09:33:05Z"
+    "tagName": "2.16.90",
+    "name": "2.16.90",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.90",
+    "publishedAt": "2026-05-05T14:01:49Z"
   },
   "recent": {
     "backend": [
@@ -69,16 +69,30 @@
         "name": "2.22.13",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.13",
         "publishedAt": "2026-04-29T02:54:50Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.22.11",
-        "name": "2.22.11",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.22.11",
-        "publishedAt": "2026-04-28T12:48:38Z"
       }
     ],
     "frontend": [
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.90",
+        "name": "2.16.90",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.90",
+        "publishedAt": "2026-05-05T14:01:49Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.89",
+        "name": "2.16.89",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.89",
+        "publishedAt": "2026-05-05T13:01:05Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.16.88",
+        "name": "2.16.88",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.88",
+        "publishedAt": "2026-05-05T12:33:09Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store-Front-End",
         "tagName": "2.16.87",
@@ -176,39 +190,11 @@
         "name": "2.16.72",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.72",
         "publishedAt": "2026-04-29T00:09:30Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.16.71",
-        "name": "2.16.71",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.71",
-        "publishedAt": "2026-04-28T13:28:32Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.16.70",
-        "name": "2.16.70",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.70",
-        "publishedAt": "2026-04-28T12:47:35Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.16.69",
-        "name": "2.16.69",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.69",
-        "publishedAt": "2026-04-28T12:28:11Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.16.68",
-        "name": "2.16.68",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.16.68",
-        "publishedAt": "2026-04-28T12:10:49Z"
       }
     ]
   },
   "previous": {
-    "backend": "2.22.17",
-    "frontend": "2.16.84"
+    "backend": "2.22.18",
+    "frontend": "2.16.87"
   }
 }
