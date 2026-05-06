@@ -1,6 +1,6 @@
 {
     "name": "sub-store-cloudflare",
-    "version": "26.19.6",
+    "version": "26.19.7",
     "description": "Sub-Store Cloudflare adapter for Workers and worker-rs",
     "type": "module",
     "cloudflare": {
