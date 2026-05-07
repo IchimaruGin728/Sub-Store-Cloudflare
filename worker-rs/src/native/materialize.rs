@@ -5,8 +5,9 @@ use worker::{Date, Env, Error, Method, Request, Response, Result};
 
 use crate::native::export::export_subscription_with_processors;
 use crate::native::model::{
-    DeleteOptions, FilterOptions, FlagOptions, ProcessorOptions, RegexSortOptions, RenameOptions,
-    SetOptions, SortOptions, TagOptions,
+    DeleteOptions, DuplicateOptions, FilterOptions, FlagOptions, ProcessorOptions,
+    RegexFilterOptions, RegexRenameOptions, RegexRenameRule, RegexSortOptions, RegionFilterOptions,
+    RenameOptions, SetOptions, SortOptions, TagOptions, TypeFilterOptions,
 };
 use crate::native::remote::fetch_remote_subscription;
 use crate::native::store::{
@@ -407,17 +408,30 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
                             .and_then(Value::as_str)
                             .map(str::to_string);
                     }
+                    "Useless Filter" | "useless-filter" | "useless" => options.useless = Some(true),
+                    "Region Filter" | "region-filter" | "regionFilter" => {
+                        options.region_filter = region_filter_options_from_step(step)
+                    }
+                    "Type Filter" | "type-filter" | "typeFilter" => {
+                        options.type_filter = type_filter_options_from_step(step)
+                    }
                     "filter" | "include" | "exclude" => {
                         options.filter = serde_json::from_value::<FilterOptions>(payload).ok()
+                    }
+                    "Regex Filter" | "regex-filter" | "regexFilter" => {
+                        options.regex_filter = regex_filter_options_from_step(step)
                     }
                     "rename" | "rename-node" => {
                         options.rename = serde_json::from_value::<RenameOptions>(payload).ok()
                     }
+                    "Regex Rename Operator" | "regex-rename" | "regexRename" => {
+                        options.regex_rename = regex_rename_options_from_step(step)
+                    }
                     "delete" | "regex-delete" | "regexDelete" | "Regex Delete Operator" => {
                         options.delete = delete_options_from_step(step)
                     }
-                    "flag" | "country-flag" => {
-                        options.flag = serde_json::from_value::<FlagOptions>(payload).ok()
+                    "flag" | "country-flag" | "Flag Operator" => {
+                        options.flag = flag_options_from_step(step)
                     }
                     "tag" | "add-tag" => {
                         options.tag = serde_json::from_value::<TagOptions>(payload).ok()
@@ -432,6 +446,9 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
                     }
                     "regex-sort" | "regexSort" | "Regex Sort Operator" => {
                         options.regex_sort = regex_sort_options_from_step(step)
+                    }
+                    "Handle Duplicate Operator" | "handle-duplicate" | "duplicate" => {
+                        options.duplicate = duplicate_options_from_step(step)
                     }
                     "limit" | "slice" => {
                         options.limit = step
@@ -449,6 +466,67 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
         }
         _ => None,
     }
+}
+
+fn region_filter_options_from_step(step: &Map<String, Value>) -> Option<RegionFilterOptions> {
+    if let Some(args) = step.get("args") {
+        return Some(RegionFilterOptions {
+            value: string_list(args),
+            regions: args.get("value").and_then(string_list),
+            keep: args.get("keep").and_then(Value::as_bool),
+        });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<RegionFilterOptions>(payload).ok()
+}
+
+fn type_filter_options_from_step(step: &Map<String, Value>) -> Option<TypeFilterOptions> {
+    if let Some(args) = step.get("args") {
+        return Some(TypeFilterOptions {
+            value: string_list(args),
+            types: args.get("value").and_then(string_list),
+            keep: args.get("keep").and_then(Value::as_bool),
+        });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<TypeFilterOptions>(payload).ok()
+}
+
+fn regex_filter_options_from_step(step: &Map<String, Value>) -> Option<RegexFilterOptions> {
+    if let Some(args) = step.get("args").and_then(Value::as_object) {
+        return Some(RegexFilterOptions {
+            regex: args
+                .get("regex")
+                .and_then(string_list)
+                .or_else(|| args.get("expressions").and_then(string_list)),
+            expressions: None,
+            keep: args.get("keep").and_then(Value::as_bool),
+        });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<RegexFilterOptions>(payload).ok()
+}
+
+fn regex_rename_options_from_step(step: &Map<String, Value>) -> Option<RegexRenameOptions> {
+    let rules_value = step.get("args").unwrap_or(&Value::Null);
+    if let Some(items) = rules_value.as_array() {
+        let rules = items
+            .iter()
+            .filter_map(|item| {
+                Some(RegexRenameRule {
+                    expr: item.get("expr")?.as_str()?.to_string(),
+                    now: item
+                        .get("now")
+                        .and_then(Value::as_str)
+                        .map(str::to_string)
+                        .or_else(|| Some(String::new())),
+                })
+            })
+            .collect::<Vec<_>>();
+        return Some(RegexRenameOptions { rules: Some(rules) });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<RegexRenameOptions>(payload).ok()
 }
 
 fn delete_options_from_step(step: &Map<String, Value>) -> Option<DeleteOptions> {
@@ -469,6 +547,19 @@ fn delete_options_from_step(step: &Map<String, Value>) -> Option<DeleteOptions> 
     })
 }
 
+fn flag_options_from_step(step: &Map<String, Value>) -> Option<FlagOptions> {
+    if let Some(args) = step.get("args").and_then(Value::as_object) {
+        return Some(FlagOptions {
+            mode: args.get("mode").and_then(Value::as_str).map(str::to_string),
+            tw: args.get("tw").and_then(Value::as_str).map(str::to_string),
+            enabled: Some(args.get("mode").and_then(Value::as_str) != Some("remove")),
+            ..FlagOptions::default()
+        });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<FlagOptions>(payload).ok()
+}
+
 fn set_options_from_step(step: &Map<String, Value>) -> Option<SetOptions> {
     if let Some(args) = step.get("args").and_then(Value::as_object) {
         let mut set = SetOptions::default();
@@ -477,6 +568,29 @@ fn set_options_from_step(step: &Map<String, Value>) -> Option<SetOptions> {
     }
     let payload = Value::Object(without_type_keys(step));
     serde_json::from_value::<SetOptions>(payload).ok()
+}
+
+fn duplicate_options_from_step(step: &Map<String, Value>) -> Option<DuplicateOptions> {
+    if let Some(args) = step.get("args").and_then(Value::as_object) {
+        return Some(DuplicateOptions {
+            action: args
+                .get("action")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            template: args
+                .get("template")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            link: args.get("link").and_then(Value::as_str).map(str::to_string),
+            position: args
+                .get("position")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            field: args.get("field").and_then(string_list),
+        });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<DuplicateOptions>(payload).ok()
 }
 
 fn regex_sort_options_from_step(step: &Map<String, Value>) -> Option<RegexSortOptions> {

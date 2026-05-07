@@ -2,9 +2,9 @@
     "$schema": "./node_modules/wrangler/config-schema.json",
     "name": "sub-store-cloudflare",
     "main": "worker-rs/build/worker/shim.mjs",
-    "compatibility_date": "2026-05-02",
+    "compatibility_date": "2026-05-07",
     "build": {
-        "command": "cd worker-rs && cargo install -q worker-build --force && worker-build --release"
+        "command": "cd worker-rs && (command -v worker-build >/dev/null 2>&1 || cargo install -q worker-build) && worker-build --release"
     },
     "vars": {
         "SUB_STORE_BACKEND_VERSION": "upstream-latest",

@@ -61,8 +61,17 @@ pub struct ProcessorOptions {
     pub dedupe: Option<bool>,
     #[serde(rename = "dedupeBy")]
     pub dedupe_by: Option<String>,
+    pub useless: Option<bool>,
+    #[serde(rename = "regionFilter")]
+    pub region_filter: Option<RegionFilterOptions>,
+    #[serde(rename = "typeFilter")]
+    pub type_filter: Option<TypeFilterOptions>,
     pub filter: Option<FilterOptions>,
+    #[serde(rename = "regexFilter")]
+    pub regex_filter: Option<RegexFilterOptions>,
     pub rename: Option<RenameOptions>,
+    #[serde(rename = "regexRename")]
+    pub regex_rename: Option<RegexRenameOptions>,
     pub delete: Option<DeleteOptions>,
     pub flag: Option<FlagOptions>,
     pub tag: Option<TagOptions>,
@@ -70,8 +79,25 @@ pub struct ProcessorOptions {
     pub sort: Option<SortOptions>,
     #[serde(rename = "regexSort")]
     pub regex_sort: Option<RegexSortOptions>,
+    pub duplicate: Option<DuplicateOptions>,
     pub limit: Option<usize>,
     pub reverse: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegionFilterOptions {
+    pub value: Option<Vec<String>>,
+    pub regions: Option<Vec<String>>,
+    pub keep: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypeFilterOptions {
+    pub value: Option<Vec<String>>,
+    pub types: Option<Vec<String>>,
+    pub keep: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -88,6 +114,14 @@ pub struct FilterOptions {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct RegexFilterOptions {
+    pub regex: Option<Vec<String>>,
+    pub expressions: Option<Vec<String>>,
+    pub keep: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RenameOptions {
     pub prefix: Option<String>,
     pub suffix: Option<String>,
@@ -95,6 +129,19 @@ pub struct RenameOptions {
     pub with: Option<String>,
     pub regex: Option<bool>,
     pub template: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegexRenameOptions {
+    pub rules: Option<Vec<RegexRenameRule>>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegexRenameRule {
+    pub expr: String,
+    pub now: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -109,6 +156,8 @@ pub struct DeleteOptions {
 #[serde(rename_all = "camelCase")]
 pub struct FlagOptions {
     pub enabled: Option<bool>,
+    pub mode: Option<String>,
+    pub tw: Option<String>,
     pub position: Option<String>,
     pub separator: Option<String>,
 }
@@ -153,6 +202,16 @@ pub struct SortOptions {
 pub struct RegexSortOptions {
     pub expressions: Option<Vec<String>>,
     pub order: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DuplicateOptions {
+    pub action: Option<String>,
+    pub template: Option<String>,
+    pub link: Option<String>,
+    pub position: Option<String>,
+    pub field: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -235,14 +294,20 @@ pub fn capabilities() -> CapabilitiesResponse {
         },
         processors: vec![
             "dedupe",
+            "useless-filter",
+            "region-filter",
+            "type-filter",
             "filter",
+            "regex-filter",
             "rename",
+            "regex-rename",
             "delete",
             "flag",
             "tag",
             "set",
             "sort",
             "regex-sort",
+            "handle-duplicate",
             "limit",
             "reverse",
         ],
