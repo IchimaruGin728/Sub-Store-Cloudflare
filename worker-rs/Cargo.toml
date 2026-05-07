@@ -15,6 +15,7 @@ serde_yaml = "*"
 base64 = "*"
 regex = "*"
 url = "*"
+js-sys = "*"
 worker = { version = "*", features = ["d1"] }
 
 [profile.release]

@@ -1,9 +1,11 @@
+use js_sys::Math;
 use regex::Regex;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 
 use super::model::{
-    FlagOptions, ParseResponse, ParseStats, ProcessorOptions, ProxyNode, TagOptions,
+    DeleteOptions, FlagOptions, ParseResponse, ParseStats, ProcessorOptions, ProxyNode,
+    RegexSortOptions, SetOptions, TagOptions,
 };
 use super::parser::parse_subscription;
 
@@ -50,6 +52,14 @@ pub fn process_nodes(
         }
     }
 
+    if let Some(delete) = &options.delete {
+        let before = nodes.len();
+        if let Err(message) = apply_delete(&mut nodes, delete) {
+            warnings.push(message);
+        }
+        deduped += before.saturating_sub(nodes.len());
+    }
+
     if let Some(flag) = &options.flag {
         for node in &mut nodes {
             apply_flag(node, flag);
@@ -62,11 +72,30 @@ pub fn process_nodes(
         }
     }
 
+    if let Some(set) = &options.set {
+        for node in &mut nodes {
+            apply_set(node, set);
+        }
+    }
+
     if let Some(sort) = &options.sort {
-        let by = sort.by.as_deref().unwrap_or("name");
-        nodes.sort_by(|a, b| compare_nodes(a, b, by));
-        if sort.desc.unwrap_or(false) {
+        if is_random_order(sort.order.as_deref()) || sort.by.as_deref() == Some("random") {
+            for index in (1..nodes.len()).rev() {
+                let swap_index = (Math::random() * ((index + 1) as f64)).floor() as usize;
+                nodes.swap(index, swap_index);
+            }
+        } else {
+            let by = sort.by.as_deref().unwrap_or("name");
+            nodes.sort_by(|a, b| compare_nodes(a, b, by));
+        }
+        if sort.desc.unwrap_or(false) || matches!(sort.order.as_deref(), Some("desc")) {
             nodes.reverse();
+        }
+    }
+
+    if let Some(regex_sort) = &options.regex_sort {
+        if let Err(message) = apply_regex_sort(&mut nodes, regex_sort) {
+            warnings.push(message);
         }
     }
 
@@ -150,6 +179,39 @@ fn rename_node(node: &mut ProxyNode, rename: &super::model::RenameOptions) -> Re
     Ok(())
 }
 
+fn apply_delete(nodes: &mut Vec<ProxyNode>, delete: &DeleteOptions) -> Result<(), String> {
+    let patterns = delete
+        .patterns
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .map(|pattern| {
+            if delete.trim.unwrap_or(true) {
+                pattern.trim().to_string()
+            } else {
+                pattern.clone()
+            }
+        })
+        .filter(|pattern| !pattern.is_empty())
+        .collect::<Vec<_>>();
+    if patterns.is_empty() {
+        return Ok(());
+    }
+    if delete.regex.unwrap_or(true) {
+        let regexes = patterns
+            .iter()
+            .map(|pattern| {
+                Regex::new(pattern)
+                    .map_err(|err| format!("invalid delete regex `{}`: {}", pattern, err))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        nodes.retain(|node| !regexes.iter().any(|regex| regex.is_match(&node.name)));
+    } else {
+        nodes.retain(|node| !patterns.iter().any(|pattern| node.name.contains(pattern)));
+    }
+    Ok(())
+}
+
 fn apply_flag(node: &mut ProxyNode, flag: &FlagOptions) {
     if !flag.enabled.unwrap_or(true) {
         return;
@@ -197,6 +259,51 @@ fn apply_tag(node: &mut ProxyNode, tag: &TagOptions) {
     };
 }
 
+fn apply_set(node: &mut ProxyNode, set: &SetOptions) {
+    set_bool_param(node, "udp", set.udp);
+    set_bool_param(node, "tfo", set.tfo);
+    set_bool_param(node, "fast-open", set.fast_open.or(set.tfo));
+    set_bool_param(node, "skip-cert-verify", set.skip_cert_verify);
+    if matches!(node.protocol, super::model::ProxyProtocol::Vmess) {
+        set_bool_param(node, "aead", set.vmess_aead);
+    }
+    if let Some(tls) = set.tls {
+        node.tls = Some(tls);
+        if tls {
+            node.params
+                .insert("security".to_string(), "tls".to_string());
+        } else {
+            node.params.remove("security");
+        }
+    }
+    if let Some(network) = &set.network {
+        node.network = Some(network.clone());
+    }
+    if let Some(server) = &set.server {
+        node.server = server.clone();
+    }
+    if let Some(port) = set.port {
+        node.port = port;
+    }
+}
+
+fn apply_regex_sort(nodes: &mut [ProxyNode], options: &RegexSortOptions) -> Result<(), String> {
+    let patterns = options.expressions.as_deref().unwrap_or(&[]);
+    if patterns.is_empty() {
+        return Ok(());
+    }
+    let regexes = patterns
+        .iter()
+        .map(|pattern| {
+            Regex::new(pattern)
+                .map_err(|err| format!("invalid regex sort pattern `{}`: {}", pattern, err))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let order = options.order.as_deref().unwrap_or("asc");
+    nodes.sort_by(|a, b| compare_regex_rank(&regexes, &a.name, &b.name, order));
+    Ok(())
+}
+
 fn compare_nodes(a: &ProxyNode, b: &ProxyNode, by: &str) -> Ordering {
     match by {
         "server" => a.server.cmp(&b.server).then_with(|| a.name.cmp(&b.name)),
@@ -208,6 +315,35 @@ fn compare_nodes(a: &ProxyNode, b: &ProxyNode, by: &str) -> Ordering {
         "tls" => a.tls.cmp(&b.tls).then_with(|| a.name.cmp(&b.name)),
         _ => a.name.cmp(&b.name),
     }
+}
+
+fn compare_regex_rank(regexes: &[Regex], a: &str, b: &str, order: &str) -> Ordering {
+    let rank_a = regex_rank(regexes, a);
+    let rank_b = regex_rank(regexes, b);
+    match (rank_a, rank_b) {
+        (Some(a_rank), Some(b_rank)) => a_rank
+            .cmp(&b_rank)
+            .then_with(|| fallback_name_order(a, b, order)),
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => fallback_name_order(a, b, order),
+    }
+}
+
+fn regex_rank(regexes: &[Regex], input: &str) -> Option<usize> {
+    regexes.iter().position(|regex| regex.is_match(input))
+}
+
+fn fallback_name_order(a: &str, b: &str, order: &str) -> Ordering {
+    match order {
+        "desc" => b.cmp(a),
+        "original" => Ordering::Equal,
+        _ => a.cmp(b),
+    }
+}
+
+fn is_random_order(order: Option<&str>) -> bool {
+    matches!(order, Some("random"))
 }
 
 fn matches_text(value: &str, needle: &str, case_sensitive: Option<bool>) -> bool {
@@ -259,6 +395,18 @@ fn render_template(node: &ProxyNode, template: &str) -> String {
                 .or_else(|| country_flag(&node.server))
                 .unwrap_or(""),
         )
+}
+
+fn set_bool_param(node: &mut ProxyNode, key: &str, value: Option<bool>) {
+    match value {
+        Some(true) => {
+            node.params.insert(key.to_string(), "true".to_string());
+        }
+        Some(false) => {
+            node.params.remove(key);
+        }
+        None => {}
+    }
 }
 
 fn protocol_tag(node: &ProxyNode) -> &'static str {
@@ -330,7 +478,8 @@ fn country_flag(input: &str) -> Option<&'static str> {
 mod tests {
     use super::*;
     use crate::native::model::{
-        FilterOptions, FlagOptions, RenameOptions, SortOptions, TagOptions,
+        DeleteOptions, FilterOptions, FlagOptions, RegexSortOptions, RenameOptions, SetOptions,
+        SortOptions, TagOptions,
     };
 
     #[test]
@@ -359,6 +508,7 @@ mod tests {
                 sort: Some(SortOptions {
                     by: Some("server".to_string()),
                     desc: Some(false),
+                    ..SortOptions::default()
                 }),
                 limit: Some(1),
                 ..ProcessorOptions::default()
@@ -418,5 +568,50 @@ mod tests {
             .iter()
             .any(|node| node.name.contains("[TLS]")));
         assert_eq!(processed.stats.deduped, 1);
+    }
+
+    #[test]
+    fn applies_set_delete_and_regex_sort_processors() {
+        let input = [
+            "vless://00000000-0000-0000-0000-000000000000@b.example.com:443?type=ws&security=tls#B-Node",
+            "vless://00000000-0000-0000-0000-000000000000@a.example.com:80#A-Remove",
+            "trojan://pass@c.example.com:443#C-Node",
+        ]
+        .join("\n");
+
+        let processed = process_subscription(
+            &input,
+            &ProcessorOptions {
+                delete: Some(DeleteOptions {
+                    patterns: Some(vec!["Remove".to_string()]),
+                    ..DeleteOptions::default()
+                }),
+                set: Some(SetOptions {
+                    udp: Some(true),
+                    skip_cert_verify: Some(true),
+                    ..SetOptions::default()
+                }),
+                regex_sort: Some(RegexSortOptions {
+                    expressions: Some(vec!["C-".to_string(), "B-".to_string()]),
+                    order: Some("asc".to_string()),
+                }),
+                ..ProcessorOptions::default()
+            },
+        );
+
+        assert_eq!(processed.nodes.len(), 2);
+        assert_eq!(processed.nodes[0].name, "C-Node");
+        assert_eq!(processed.nodes[1].name, "B-Node");
+        assert_eq!(
+            processed.nodes[1]
+                .params
+                .get("skip-cert-verify")
+                .map(String::as_str),
+            Some("true")
+        );
+        assert_eq!(
+            processed.nodes[1].params.get("udp").map(String::as_str),
+            Some("true")
+        );
     }
 }

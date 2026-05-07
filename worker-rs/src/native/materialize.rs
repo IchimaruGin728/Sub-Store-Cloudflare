@@ -5,7 +5,8 @@ use worker::{Date, Env, Error, Method, Request, Response, Result};
 
 use crate::native::export::export_subscription_with_processors;
 use crate::native::model::{
-    FilterOptions, FlagOptions, ProcessorOptions, RenameOptions, SortOptions, TagOptions,
+    DeleteOptions, FilterOptions, FlagOptions, ProcessorOptions, RegexSortOptions, RenameOptions,
+    SetOptions, SortOptions, TagOptions,
 };
 use crate::native::remote::fetch_remote_subscription;
 use crate::native::store::{
@@ -412,13 +413,26 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
                     "rename" | "rename-node" => {
                         options.rename = serde_json::from_value::<RenameOptions>(payload).ok()
                     }
+                    "delete" | "regex-delete" | "regexDelete" | "Regex Delete Operator" => {
+                        options.delete = delete_options_from_step(step)
+                    }
                     "flag" | "country-flag" => {
                         options.flag = serde_json::from_value::<FlagOptions>(payload).ok()
                     }
                     "tag" | "add-tag" => {
                         options.tag = serde_json::from_value::<TagOptions>(payload).ok()
                     }
-                    "sort" => options.sort = serde_json::from_value::<SortOptions>(payload).ok(),
+                    "set"
+                    | "set-prop"
+                    | "set-property"
+                    | "Quick Setting Operator"
+                    | "Set Property Operator" => options.set = set_options_from_step(step),
+                    "sort" | "Sort Operator" => {
+                        options.sort = serde_json::from_value::<SortOptions>(payload).ok()
+                    }
+                    "regex-sort" | "regexSort" | "Regex Sort Operator" => {
+                        options.regex_sort = regex_sort_options_from_step(step)
+                    }
                     "limit" | "slice" => {
                         options.limit = step
                             .get("limit")
@@ -435,6 +449,82 @@ fn processor_options_from_value(value: &Value) -> Option<ProcessorOptions> {
         }
         _ => None,
     }
+}
+
+fn delete_options_from_step(step: &Map<String, Value>) -> Option<DeleteOptions> {
+    let patterns = step
+        .get("patterns")
+        .or_else(|| step.get("expressions"))
+        .or_else(|| step.get("regex"))
+        .and_then(string_list)
+        .or_else(|| {
+            step.get("args")
+                .and_then(|args| args.get("regex"))
+                .and_then(string_list)
+        });
+    Some(DeleteOptions {
+        patterns,
+        regex: Some(true),
+        trim: Some(true),
+    })
+}
+
+fn set_options_from_step(step: &Map<String, Value>) -> Option<SetOptions> {
+    if let Some(args) = step.get("args").and_then(Value::as_object) {
+        let mut set = SetOptions::default();
+        apply_quick_setting_args(&mut set, args);
+        return Some(set);
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<SetOptions>(payload).ok()
+}
+
+fn regex_sort_options_from_step(step: &Map<String, Value>) -> Option<RegexSortOptions> {
+    if let Some(args) = step.get("args").and_then(Value::as_object) {
+        return Some(RegexSortOptions {
+            expressions: args
+                .get("expressions")
+                .and_then(string_list)
+                .or_else(|| step.get("expressions").and_then(string_list)),
+            order: args
+                .get("order")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+                .or_else(|| {
+                    step.get("order")
+                        .and_then(Value::as_str)
+                        .map(str::to_string)
+                }),
+        });
+    }
+    let payload = Value::Object(without_type_keys(step));
+    serde_json::from_value::<RegexSortOptions>(payload).ok()
+}
+
+fn apply_quick_setting_args(set: &mut SetOptions, args: &Map<String, Value>) {
+    set.udp = quick_setting_bool(args.get("udp"));
+    set.tfo = quick_setting_bool(args.get("tfo"));
+    set.fast_open = set.tfo;
+    set.skip_cert_verify = quick_setting_bool(args.get("scert"));
+    set.vmess_aead = quick_setting_bool(args.get("vmess aead").or_else(|| args.get("vmessAead")));
+}
+
+fn quick_setting_bool(value: Option<&Value>) -> Option<bool> {
+    match value.and_then(Value::as_str) {
+        Some("ENABLED") => Some(true),
+        Some("DISABLED") => Some(false),
+        _ => None,
+    }
+}
+
+fn string_list(value: &Value) -> Option<Vec<String>> {
+    value.as_array().map(|items| {
+        items
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect::<Vec<_>>()
+    })
 }
 
 fn without_type_keys(step: &Map<String, Value>) -> Map<String, Value> {

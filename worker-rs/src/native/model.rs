@@ -63,9 +63,13 @@ pub struct ProcessorOptions {
     pub dedupe_by: Option<String>,
     pub filter: Option<FilterOptions>,
     pub rename: Option<RenameOptions>,
+    pub delete: Option<DeleteOptions>,
     pub flag: Option<FlagOptions>,
     pub tag: Option<TagOptions>,
+    pub set: Option<SetOptions>,
     pub sort: Option<SortOptions>,
+    #[serde(rename = "regexSort")]
+    pub regex_sort: Option<RegexSortOptions>,
     pub limit: Option<usize>,
     pub reverse: Option<bool>,
 }
@@ -95,6 +99,14 @@ pub struct RenameOptions {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct DeleteOptions {
+    pub patterns: Option<Vec<String>>,
+    pub regex: Option<bool>,
+    pub trim: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FlagOptions {
     pub enabled: Option<bool>,
     pub position: Option<String>,
@@ -112,10 +124,35 @@ pub struct TagOptions {
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetOptions {
+    pub udp: Option<bool>,
+    pub tfo: Option<bool>,
+    #[serde(alias = "fast-open")]
+    pub fast_open: Option<bool>,
+    #[serde(alias = "skip-cert-verify")]
+    pub skip_cert_verify: Option<bool>,
+    #[serde(rename = "vmess aead", alias = "vmessAead")]
+    pub vmess_aead: Option<bool>,
+    pub tls: Option<bool>,
+    pub network: Option<String>,
+    pub server: Option<String>,
+    pub port: Option<u16>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct SortOptions {
     pub by: Option<String>,
     pub desc: Option<bool>,
+    pub order: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegexSortOptions {
+    pub expressions: Option<Vec<String>>,
+    pub order: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -197,7 +234,17 @@ pub fn capabilities() -> CapabilitiesResponse {
             native: true,
         },
         processors: vec![
-            "dedupe", "filter", "rename", "flag", "tag", "sort", "limit", "reverse",
+            "dedupe",
+            "filter",
+            "rename",
+            "delete",
+            "flag",
+            "tag",
+            "set",
+            "sort",
+            "regex-sort",
+            "limit",
+            "reverse",
         ],
         exporters: vec![
             "json",
