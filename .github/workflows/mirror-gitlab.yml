@@ -1,0 +1,17 @@
+name: Mirror to GitLab
+on:
+  push:
+    branches: [main]
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wearerequired/git-mirror-action@v1
+        with:
+          source-repo: https://github.com/IchimaruGin728/Sub-Store-Cloudflare-Fronted.git
+          destination-repo: git@gitlab.com:IchimaruGin728/sub-store-cloudflare-fronted.git
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_KEY }}
