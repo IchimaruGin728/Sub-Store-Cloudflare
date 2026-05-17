@@ -119,7 +119,7 @@ pub async fn handle_store_request(mut req: Request, env: &Env, path: &str) -> Re
 }
 
 pub async fn is_owner(req: &Request, env: &Env) -> Result<bool> {
-    let Some(expected) = env.secret_store(JWT_SECRET_BINDING)?.get().await? else {
+    let Some(expected) = env.secret(JWT_SECRET_BINDING).ok().map(|s| s.to_string()) else {
         return Ok(false);
     };
     let auth = req

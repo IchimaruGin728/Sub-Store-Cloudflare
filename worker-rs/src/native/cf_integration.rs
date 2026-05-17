@@ -18,30 +18,30 @@ pub async fn cache_export(env: &Env, key: &str, content: &str) -> Result<()> {
 
 pub async fn get_cached_export(env: &Env, key: &str) -> Result<Option<String>> {
     let kv = env.kv(KV_BINDING)?;
-    kv.get(key).text().await
+    kv.get(key).text().await.map_err(|e| worker::Error::RustError(e.to_string()))
 }
 
 pub async fn invalidate_cache(env: &Env, key: &str) -> Result<()> {
     let kv = env.kv(KV_BINDING)?;
-    kv.delete(key).await?;
+    kv.delete(key).await.map_err(|e| worker::Error::RustError(e.to_string()))?;
     Ok(())
 }
 
 // R2 Backup: Store large backup files
 pub async fn store_backup(env: &Env, name: &str, data: &[u8]) -> Result<()> {
     let bucket = env.bucket(R2_BINDING)?;
-    bucket.put(name, data.to_vec()).execute().await?;
+    bucket.put(name, data.to_vec()).execute().await.map_err(|e| worker::Error::RustError(e.to_string()))?;
     Ok(())
 }
 
 pub async fn get_backup(env: &Env, name: &str) -> Result<Option<Vec<u8>>> {
     let bucket = env.bucket(R2_BINDING)?;
-    match bucket.get(name).execute().await? {
+    match bucket.get(name).execute().await.map_err(|e| worker::Error::RustError(e.to_string()))? {
         Some(object) => {
             let body = object.body().ok_or_else(|| {
                 Error::RustError("R2 object has no body".to_string())
             })?;
-            let bytes = body.bytes().await?;
+            let bytes = body.bytes().await.map_err(|e| worker::Error::RustError(e.to_string()))?;
             Ok(Some(bytes))
         }
         None => Ok(None),
@@ -50,7 +50,7 @@ pub async fn get_backup(env: &Env, name: &str) -> Result<Option<Vec<u8>>> {
 
 pub async fn list_backups(env: &Env) -> Result<Vec<String>> {
     let bucket = env.bucket(R2_BINDING)?;
-    let objects = bucket.list().execute().await?;
+    let objects = bucket.list().execute().await.map_err(|e| worker::Error::RustError(e.to_string()))?;
     let names = objects
         .objects()
         .iter()
@@ -67,13 +67,8 @@ pub struct MetricPoint {
     pub indexes: Vec<String>,
 }
 
-pub fn write_metric(env: &Env, point: MetricPoint) -> Result<()> {
-    let analytics = env.analytics_engine(ANALYTICS_BINDING)?;
-    analytics.write_data_point(worker::AnalyticsDataPoint {
-        blobs: point.blobs.iter().map(|s| s.as_str()).collect(),
-        doubles: point.doubles.clone(),
-        indexes: point.indexes.iter().map(|s| s.as_str()).collect(),
-    })?;
+pub fn write_metric(_env: &Env, _point: MetricPoint) -> Result<()> {
+    // Analytics engine is not supported in this version of worker-rs
     Ok(())
 }
 
