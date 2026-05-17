@@ -4,7 +4,7 @@
     "main": "worker-rs/build/worker/shim.mjs",
     "compatibility_date": "2026-05-07",
     "build": {
-        "command": "cd worker-rs && (command -v worker-build >/dev/null 2>&1 || cargo install -q worker-build) && worker-build --release"
+        "command": "bash scripts/build-worker-cf.sh"
     },
     "vars": {
         "SUB_STORE_BACKEND_VERSION": "upstream-latest",
@@ -52,13 +52,6 @@
             }
         ]
     },
-    "workflows": [
-        {
-            "name": "sub-store-refresh-workflow",
-            "binding": "REFRESH_WORKFLOW",
-            "class_name": "RefreshWorkflow"
-        }
-    ],
     "analytics_engine_datasets": [
         {
             "binding": "ANALYTICS",
