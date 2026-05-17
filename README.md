@@ -1,143 +1,187 @@
 # Sub-Store Cloudflare
 
-几年前想部署到 Workers 实现长期在线，但后续发现不支持 eval()，核心的脚本操作无法使用所以停更了。
+> **单用户 · Cloudflare-native · Rust 原生**
 
-如果你需要一个仅仅是用于订阅转换的工具，不需要脚本功能，并且可以持续在线，那么这个项目可能适合你。
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![Rust](https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![D1](https://img.shields.io/badge/Storage-D1-FFCF00?logo=cloudflare&logoColor=black)](https://developers.cloudflare.com/d1/)
+[![Deploy](https://img.shields.io/badge/Deploy-Cloudflare_Git_Integration-F38020)](https://developers.cloudflare.com/pages/functions/)
 
-在 Cloudflare Workers 上运行 Sub-Store Cloudflare，并逐步迁移到 `worker-rs` 原生 Rust 实现。
-
-> [!IMPORTANT]
-> 项目方向已经调整为 **单用户、Cloudflare-native、独立实现**。当前部署入口已经切到 `worker-rs`，前端/dashboard 和旧 JS compatibility Worker 已经移除。详细路线见 [Cloudflare Native Rewrite](docs/CLOUDFLARE_NATIVE_REWRITE.md)。
-
-## 特性
-
-- ✅ 根目录只保留一个 `wrangler.jsonc`
-- ✅ Cloudflare Git build 直接构建 `worker-rs`
-- ✅ GitHub Actions 只监测上游 latest，不直接部署
-- ✅ Workers 由 Cloudflare Git 集成 build/deploy，使用 Cloudflare 构建额度
-- ✅ 前端/dashboard 代码已删除，后续按自用 API 重新实现
-- ✅ 后端对外识别为 Cloudflare Workers，不再显示 Surge
-- ✅ `worker-rs/` 原生 Rust Worker 路线已成为当前部署入口
-- ✅ 每天 SGT 07:28 / 17:16 自动检查上游更新
-- ✅ Worker Cron 同样在 SGT 07:28 / 17:16 刷新已启用订阅/组合 artifacts
-
-### 当前状态存储
-
-当前实现优先使用 D1：`subscriptions`、`collections`、`files`、`artifacts`、`settings`、`tokens` 都是 D1 中的 first-class records。后续如果出现需要串行化的高冲突任务队列，再把 refresh/job coordination 放到 Durable Objects 或 Workflows。
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?logo=github)](https://github.com/IchimaruGin728/Sub-Store-Cloudflare)
+[![GitLab](https://img.shields.io/badge/GitLab-Mirror-FC6D26?logo=gitlab&logoColor=white)](https://gitlab.com/IchimaruGin728/sub-store-cloudflare)
 
 ---
 
-## ⚠️ 功能限制
+## 📋 项目定位
 
-- **worker-rs**: 当前部署入口，覆盖 env/status/health、资源 CRUD、保存订阅导出、artifact materialize、refresh、backup/restore、远程订阅拉取、解析、typed processors 和多软件导出。
-- **Sub-Store 核心功能**: 订阅/组合/文件/artifact/settings/tokens 已按 Rust 原生模型重写；复杂脚本操作继续用 typed Rust operators 替代。
-- **QuickJS/Vite/官方前端**: 已从当前项目移除，不参与 build/deploy。
+放弃兼容上游 Sub-Store 的运行时补丁方案。转向 **Cloudflare 原生独立实现**。
+
+**核心原则：**
+- 🎯 单用户优先。无多租户、无角色系统、无管理面板
+- 🔒 不追求官方前端兼容。前后端可独立演进
+- ⚡ 优先使用 Cloudflare 托管产品，简化实现、提升性能
+- 🦀 Rust 原生重写核心逻辑，替代 QuickJS/eval 方案
 
 ---
 
-## 🚀 快速部署
+## 🏗️ 架构
 
-> [!NOTE]
-> GitHub Actions 只负责监测官方 latest release，不再直接部署。Workers 交给 Cloudflare 绑定 Git 仓库后自行 build/deploy。
-> 
-> GitHub Actions 仍会记录官方最新版本，供后续 Rust parity 测试参考。
+```
+┌─────────────────────────────────────────────┐
+│  Cloudflare Pages (前端)                     │
+│  Astro + UnoCSS + Hono + Preact             │
+└──────────────┬──────────────────────────────┘
+               │ fetch + Bearer token
+┌──────────────▼──────────────────────────────┐
+│  Cloudflare Worker (后端)                    │
+│  worker-rs (Rust 原生)                       │
+├─────────────────────────────────────────────┤
+│  D1          │ 结构化数据存储                  │
+│  KV          │ 编译结果缓存                   │
+│  R2          │ 备份快照存储                   │
+│  Queues      │ 异步刷新任务                   │
+│  Workflows   │ 多步持久执行                   │
+│  Analytics   │ 自定义指标                     │
+│  Secrets     │ JWT 认证                      │
+│  Cron        │ 定时刷新                      │
+└─────────────────────────────────────────────┘
+```
 
-### 第一步：准备仓库
+---
 
-建议作为独立仓库维护，例如 `Sub-Store-Cloudflare`。
+## ✅ 已实现功能
 
-### 第二步：Cloudflare 绑定 Git 仓库
+### 后端 (worker-rs)
 
-在 Cloudflare Dashboard 中创建/绑定：
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| 📦 D1 存储 | ✅ | subscriptions/collections/files/artifacts/settings/tokens |
+| 🔐 认证 | ✅ | Secrets Store JWT + Token 验证 |
+| 🔍 解析器 | ✅ | Clash YAML · sing-box JSON · URI list · Surge/Loon/QX |
+| ⚙️ 处理器 | ✅ | 17 种：dedupe · filter · rename · sort · flag · tag 等 |
+| 📤 导出 | ✅ | 15 种格式：clash · sing-box · surge · loon · qx 等 |
+| 🔄 刷新 | ✅ | Cron 触发 · 远程拉取 · 自动重试 |
+| 💾 备份 | ✅ | 全量导出/恢复 |
+| 📊 指标 | ✅ | Analytics Engine 自定义指标 |
+| 🗄️ 缓存 | ✅ | KV 编译结果缓存 |
+| 📁 备份存储 | ✅ | R2 大文件存储 |
 
-- Worker：绑定这个 GitHub repo，生产分支选择 `main`
+### 前端 (Sub-Store-Cloudflare-Frontend)
 
-推荐项目名都用 `sub-store-cloudflare`。
+| 页面 | 状态 | 说明 |
+|------|------|------|
+| 📊 Dashboard | ✅ | 概览卡片 · 快捷操作 · Worker 状态 |
+| 📄 Subscriptions | ✅ | CRUD · 远程拉取 · 解析预览 · 导出 |
+| 📁 Collections | ✅ | 组合管理 |
+| 📂 Files | ✅ | 文件管理 |
+| ⚙️ Settings | ✅ | Token 管理 · 备份恢复 · 连接配置 |
+| 🔧 ProcessorBuilder | ✅ | 可视化处理器管道配置 |
+| 📤 ExportPanel | ✅ | 多格式导出预览 |
 
-### 第三步：Cloudflare Build 配置
+---
 
-Workers build：
+## 🚀 部署
 
-- Build command: `bash scripts/build-worker.sh`
-- Deploy command: Cloudflare Workers Git 集成默认部署当前 Worker 项目
-- Config file: `wrangler.jsonc`
-- Secret Store：`JWT_SECRET_STORE` 绑定到 `default_secrets_store` 里的 `JWT_SECRET`
-- Fallback：本地开发可在 `.dev.vars` 里临时设置 `JWT_SECRET`
+### 后端 Worker
 
-### 第四步：GitHub Actions 监测
+1. Cloudflare Dashboard → Workers & Pages → Create → **链接 Git 仓库**
+2. 选择 `Sub-Store-Cloudflare` 仓库
+3. 配置：
+   - **Build command**: `bash scripts/build-worker.sh`
+   - **Config file**: `wrangler.jsonc`
+   - **Compatibility date**: `2026-05-17`
+   - **Smart placement**: 开启
+4. 绑定 Secret Store：`JWT_SECRET_STORE` → `JWT_SECRET`
 
-Actions 会在 SGT 每天 `07:28` 和 `17:16` 检查上游 latest release。发现版本变化时，它只更新并提交：
+### 前端 Pages
 
-- `.upstream/backend-version`
-- `.upstream/frontend-version`
-- `.upstream/metadata.json`
+1. Cloudflare Dashboard → Workers & Pages → Create → **Pages** → **Connect to Git**
+2. 选择 `Sub-Store-Cloudflare-Frontend` 仓库
+3. 配置：
+   - **Build command**: `npm run build`
+   - **Build output**: `dist`
+   - **Environment variables**:
+     - `NODE_VERSION` = `26.1.0`
+     - `ENABLE_PNPM` = `true`
+   - **Compatibility date**: `2026-05-17`
+   - **Smart placement**: 开启
 
-Cloudflare 的 Git 集成检测到这个提交后，使用自己的构建额度重新 build/deploy。
+### 本地开发
 
-部署完成后：
-- 后端：`https://sub-store-cloudflare.<your-subdomain>.workers.dev` 或你的域名
+```bash
+# 后端
+cd Sub-Store-Cloudflare
+pnpm install
+pnpm run dev          # http://localhost:3000
+
+# 前端
+cd Sub-Store-Cloudflare-Frontend
+npm install
+npm run dev           # http://localhost:4321
+```
+
+---
+
+## 🔧 CF 生态集成
+
+| 服务 | 绑定 | 用途 | 状态 |
+|------|------|------|------|
+| D1 | `SUB_STORE_DB` | 主数据库 | ✅ 已用 |
+| Secrets Store | `JWT_SECRET_STORE` | JWT 认证 | ✅ 已用 |
+| KV | `SUB_STORE_CACHE` | 编译结果缓存 | ✅ 已用 |
+| R2 | `SUB_STORE_BACKUP` | 备份存储 | ✅ 已用 |
+| Queues | `REFRESH_QUEUE` | 异步刷新 | ✅ 已用 |
+| Workflows | `REFRESH_WORKFLOW` | 持久执行 | ✅ 已用 |
+| Analytics | `ANALYTICS` | 自定义指标 | ✅ 已用 |
+| Cron | — | 定时刷新 | ✅ 已用 |
+| Observability | — | 日志/追踪 | ✅ 已用 |
+| Browser Run | — | JS 渲染抓取 | 🔜 可选 |
+| Workers AI | — | 智能标签 | 🔜 可选 |
+
+---
+
+## 📁 项目结构
+
+```
+Sub-Store-Cloudflare/
+├── worker-rs/                 # Rust 原生 Worker
+│   ├── src/
+│   │   ├── lib.rs             # 入口
+│   │   ├── routes.rs          # 路由定义
+│   │   └── native/            # 核心模块
+│   │       ├── store.rs       # D1 存储层
+│   │       ├── resources.rs   # 资源 CRUD
+│   │       ├── parser.rs      # 订阅解析
+│   │       ├── export.rs      # 导出格式
+│   │       ├── process.rs     # 处理器管道
+│   │       ├── refresh.rs     # 刷新逻辑
+│   │       ├── backup.rs      # 备份恢复
+│   │       └── cf_integration.rs  # CF 生态集成
+│   └── Cargo.toml
+├── migrations/                # D1 迁移
+├── scripts/                   # 构建脚本
+├── wrangler.jsonc             # Worker 配置
+└── package.json
+```
 
 ---
 
 ## 🔄 自动更新
 
-配置完成后，GitHub Actions 会：
-
-- 每天 **SGT 07:28 / 17:16** 自动检查 Sub-Store 官方仓库是否有新版本
-- 如果有更新，只提交 `.upstream/*` 版本标记
-- Cloudflare Git 集成检测到提交后自行 build/deploy
-
-Worker 自身也配置了同一时间的 Cloudflare Cron Trigger，用来刷新 D1 中已启用的 `subscriptions` 和 `collections`，并把结果写入 `artifacts`。
-
-你也可以随时通过 Actions → Run workflow 手动触发检查。
+- **GitHub Actions** 每天 SGT 07:28 / 17:16 检查上游 Sub-Store 最新版本
+- 版本变化时提交 `.upstream/*` 标记
+- **Cloudflare Git Integration** 自动触发 build/deploy
+- **Worker Cron** 同时间刷新已启用的订阅/组合
 
 ---
 
-## 🛠️ 本地开发
-
-### 前置要求
-
-- Node.js
-- pnpm
-
-### 快速开始
-
-```bash
-# 安装项目依赖（package.json 里的依赖版本全部使用 latest）
-pnpm install
-
-# 启动开发服务器
-pnpm run dev
-
-# 编译
-pnpm run build
-
-# 本地部署
-pnpm run deploy:local
-```
-
-访问 http://localhost:3000 测试
-
-### 可用命令
-
-| 命令 | 说明 |
-|------|------|
-| `pnpm run build` | 构建 |
-| `pnpm run build:worker` | Cloudflare Workers Git build 使用的后端构建 |
-| `pnpm run dev` | 本地开发服务器 |
-| `pnpm run deploy:local` | 从本地部署到 Cloudflare |
-| `pnpm run tail` | 实时查看 Cloudflare Worker 生产环境的日志 |
-
----
-
-## 故障排除
-
-### 订阅下载超时
-
-Workers HTTP 请求超时为 10-55 秒。如果目标服务器响应慢，可能会超时。
-
----
-
-## License
+## 🛡️ 许可证
 
 [AGPL-3.0](LICENSE)
+
+---
+
+<p align="center">
+  <sub>Built with ☕ and Rust</sub>
+</p>
