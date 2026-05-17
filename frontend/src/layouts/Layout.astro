@@ -1,0 +1,106 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Sub-Store Dashboard" } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+          <h1 class="text-xl font-bold flex items-center gap-2">
+            <span class="i-heroicons-cloud-arrow-down text-blue-500"></span>
+            Sub-Store
+          </h1>
+          <p class="text-xs text-gray-500 mt-1">Cloudflare Dashboard</p>
+        </div>
+
+        <nav class="flex-1 p-3 space-y-1">
+          <a
+            href="/"
+            class:list={[
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              currentPath === "/"
+                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5",
+            ]}
+          >
+            <span class="i-heroicons-home"></span>
+            Dashboard
+          </a>
+          <a
+            href="/subscriptions"
+            class:list={[
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              currentPath.startsWith("/subscriptions")
+                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5",
+            ]}
+          >
+            <span class="i-heroicons-document-text"></span>
+            Subscriptions
+          </a>
+          <a
+            href="/collections"
+            class:list={[
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              currentPath.startsWith("/collections")
+                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5",
+            ]}
+          >
+            <span class="i-heroicons-folder"></span>
+            Collections
+          </a>
+          <a
+            href="/files"
+            class:list={[
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              currentPath.startsWith("/files")
+                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5",
+            ]}
+          >
+            <span class="i-heroicons-server"></span>
+            Files
+          </a>
+          <a
+            href="/settings"
+            class:list={[
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+              currentPath === "/settings"
+                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5",
+            ]}
+          >
+            <span class="i-heroicons-cog-6-tooth"></span>
+            Settings
+          </a>
+        </nav>
+
+        <div class="p-3 border-t border-gray-200 dark:border-gray-800">
+          <p class="text-xs text-gray-400">Sub-Store Cloudflare</p>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 overflow-y-auto">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

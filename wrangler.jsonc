@@ -25,6 +25,46 @@
             "migrations_dir": "migrations"
         }
     ],
+    "kv_namespaces": [
+        {
+            "binding": "SUB_STORE_CACHE",
+            "id": "da911c88a4bc452a9d6dd3d7e02d80f7"
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "SUB_STORE_BACKUP",
+            "bucket_name": "sub-store-backups"
+        }
+    ],
+    "queues": {
+        "producers": [
+            {
+                "binding": "REFRESH_QUEUE",
+                "queue": "sub-store-refresh"
+            }
+        ],
+        "consumers": [
+            {
+                "queue": "sub-store-refresh",
+                "max_batch_size": 10,
+                "max_batch_timeout": 30
+            }
+        ]
+    },
+    "workflows": [
+        {
+            "name": "sub-store-refresh-workflow",
+            "binding": "REFRESH_WORKFLOW",
+            "class_name": "RefreshWorkflow"
+        }
+    ],
+    "analytics_engine_datasets": [
+        {
+            "binding": "ANALYTICS",
+            "dataset": "sub_store_metrics"
+        }
+    ],
     "triggers": {
         "crons": [
             "28 23 * * *",
@@ -32,6 +72,14 @@
         ]
     },
     "observability": {
-        "enabled": true
+        "logs": {
+            "enabled": true,
+            "invocation_logs": false,
+            "head_sampling_rate": 0
+        },
+        "traces": {
+            "enabled": true,
+            "head_sampling_rate": 0
+        }
     }
 }

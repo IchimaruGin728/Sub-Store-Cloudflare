@@ -1,0 +1,167 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Dashboard - Sub-Store">
+  <div class="p-6 max-w-7xl mx-auto">
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold">Dashboard</h2>
+      <p class="text-gray-500 mt-1">Overview of your Sub-Store</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="card">
+        <div class="flex items-center gap-3">
+          <span class="i-heroicons-document-text text-2xl text-blue-500"></span>
+          <div>
+            <p class="text-sm text-gray-500">Subscriptions</p>
+            <p class="text-2xl font-bold" id="stat-subs">-</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center gap-3">
+          <span class="i-heroicons-folder text-2xl text-purple-500"></span>
+          <div>
+            <p class="text-sm text-gray-500">Collections</p>
+            <p class="text-2xl font-bold" id="stat-collections">-</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center gap-3">
+          <span class="i-heroicons-cloud-arrow-down text-2xl text-green-500"></span>
+          <div>
+            <p class="text-sm text-gray-500">Artifacts</p>
+            <p class="text-2xl font-bold" id="stat-artifacts">-</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="flex items-center gap-3">
+          <span class="i-heroicons-server text-2xl text-orange-500"></span>
+          <div>
+            <p class="text-sm text-gray-500">Files</p>
+            <p class="text-2xl font-bold" id="stat-files">-</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mb-8">
+      <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+      <div class="flex flex-wrap gap-3">
+        <button id="btn-refresh-all" class="btn-primary flex items-center gap-2">
+          <span class="i-heroicons-arrow-path"></span>
+          Refresh All
+        </button>
+        <button id="btn-parse" class="btn-ghost flex items-center gap-2">
+          <span class="i-heroicons-magnifying-glass"></span>
+          Parse Subscription
+        </button>
+        <button id="btn-backup" class="btn-ghost flex items-center gap-2">
+          <span class="i-heroicons-cloud-arrow-up"></span>
+          Export Backup
+        </button>
+      </div>
+    </div>
+
+    <!-- Worker Status -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-4">Worker Status</h3>
+      <div id="worker-status" class="text-sm text-gray-500">Loading...</div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  async function loadStats() {
+    try {
+      const [subsRes, collsRes, artifactsRes, filesRes, statusRes] = await Promise.allSettled([
+        fetch("/api/subs").then(r => r.json()),
+        fetch("/api/collections").then(r => r.json()),
+        fetch("/api/artifacts").then(r => r.json()),
+        fetch("/api/files").then(r => r.json()),
+        fetch("/api/utils/worker-status").then(r => r.json()),
+      ]);
+
+      if (subsRes.status === "fulfilled" && subsRes.value?.items) {
+        document.getElementById("stat-subs")!.textContent = String(subsRes.value.items.length);
+      }
+      if (collsRes.status === "fulfilled" && collsRes.value?.items) {
+        document.getElementById("stat-collections")!.textContent = String(collsRes.value.items.length);
+      }
+      if (artifactsRes.status === "fulfilled" && artifactsRes.value?.items) {
+        document.getElementById("stat-artifacts")!.textContent = String(artifactsRes.value.items.length);
+      }
+      if (filesRes.status === "fulfilled" && filesRes.value?.items) {
+        document.getElementById("stat-files")!.textContent = String(filesRes.value.items.length);
+      }
+      if (statusRes.status === "fulfilled" && statusRes.value) {
+        const s = statusRes.value;
+        const el = document.getElementById("worker-status")!;
+        el.textContent = "";
+        const items = [
+          ["Backend", s.backend || "N/A"],
+          ["Runtime", s.runtime || "N/A"],
+          ["Version", s.version || "N/A"],
+          ["Upstream", s.upstream?.backend || "N/A"],
+        ];
+        for (const [label, value] of items) {
+          const row = document.createElement("div");
+          row.className = "flex gap-2 py-1";
+          const labelEl = document.createElement("span");
+          labelEl.className = "text-gray-500 w-24";
+          labelEl.textContent = label + ":";
+          const valueEl = document.createElement("span");
+          valueEl.textContent = value;
+          row.appendChild(labelEl);
+          row.appendChild(valueEl);
+          el.appendChild(row);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load stats:", e);
+    }
+  }
+
+  document.getElementById("btn-refresh-all")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btn-refresh-all")!;
+    btn.textContent = "Refreshing...";
+    btn.setAttribute("disabled", "true");
+    try {
+      const res = await fetch("/api/refresh", { method: "POST", body: "{}" });
+      const data = await res.json();
+      alert(`Refreshed: ${data.refreshed || 0} ok, ${data.failed || 0} failed`);
+    } catch (e) {
+      alert("Refresh failed: " + e);
+    } finally {
+      btn.textContent = "Refresh All";
+      btn.removeAttribute("disabled");
+    }
+  });
+
+  document.getElementById("btn-parse")?.addEventListener("click", () => {
+    window.location.href = "/subscriptions?action=parse";
+  });
+
+  document.getElementById("btn-backup")?.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/api/backup");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sub-store-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Backup failed: " + e);
+    }
+  });
+
+  loadStats();
+</script>

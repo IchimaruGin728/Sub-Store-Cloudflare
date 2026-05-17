@@ -1,4 +1,5 @@
 pub mod backup;
+pub mod cf_integration;
 pub mod export;
 pub mod materialize;
 pub mod model;

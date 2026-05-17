@@ -12,8 +12,10 @@
     },
     "scripts": {
         "dev": "pnpm exec wrangler dev --host 0.0.0.0 --port 3000",
+        "dev:frontend": "cd frontend && pnpm exec astro dev",
         "build": "pnpm exec wrangler deploy --dry-run --outdir dist",
         "build:worker": "pnpm run build",
+        "build:frontend": "cd frontend && pnpm exec astro build",
         "deploy:local": "pnpm exec wrangler deploy",
         "tail": "pnpm exec wrangler tail --format=pretty"
     },

@@ -1,0 +1,69 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Collections - Sub-Store">
+  <div class="p-6 max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold">Collections</h2>
+        <p class="text-gray-500 mt-1">Group subscriptions together</p>
+      </div>
+      <button id="btn-add-collection" class="btn-primary flex items-center gap-2">
+        <span class="i-heroicons-plus"></span>
+        Add Collection
+      </button>
+    </div>
+
+    <div id="collection-list" class="space-y-3">
+      <p class="text-gray-500">Loading...</p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  async function loadCollections() {
+    try {
+      const res = await fetch("/api/collections");
+      const data = await res.json();
+      const el = document.getElementById("collection-list")!;
+      const items = data.items || [];
+      if (items.length === 0) {
+        el.textContent = "No collections yet.";
+        return;
+      }
+      el.textContent = "";
+      for (const coll of items) {
+        const card = document.createElement("div");
+        card.className = "card flex items-center justify-between";
+        const info = document.createElement("div");
+        const name = document.createElement("p");
+        name.className = "font-medium";
+        name.textContent = coll.name || "Unnamed";
+        const meta = document.createElement("p");
+        meta.className = "text-sm text-gray-500";
+        const subs = coll.subscriptions || coll.subs || [];
+        meta.textContent = `${subs.length} subscription(s)`;
+        info.appendChild(name);
+        info.appendChild(meta);
+        const actions = document.createElement("div");
+        actions.className = "flex gap-2";
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-ghost text-sm px-2 py-1 text-red-500";
+        delBtn.textContent = "Delete";
+        delBtn.onclick = async () => {
+          if (!confirm(`Delete "${coll.name}"?`)) return;
+          await fetch(`/api/collection/${coll.name}`, { method: "DELETE" });
+          await loadCollections();
+        };
+        actions.appendChild(delBtn);
+        card.appendChild(info);
+        card.appendChild(actions);
+        el.appendChild(card);
+      }
+    } catch (e) {
+      document.getElementById("collection-list")!.textContent = "Failed to load";
+    }
+  }
+  loadCollections();
+</script>

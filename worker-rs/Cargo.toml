@@ -16,7 +16,7 @@ base64 = "*"
 regex = "*"
 url = "*"
 js-sys = "*"
-worker = { version = "*", features = ["d1"] }
+worker = { version = "*", features = ["d1", "kv", "r2", "queue", "analytics"] }
 
 [profile.release]
 lto = true

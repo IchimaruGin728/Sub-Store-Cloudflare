@@ -1,0 +1,218 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Subscriptions - Sub-Store">
+  <div class="p-6 max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold">Subscriptions</h2>
+        <p class="text-gray-500 mt-1">Manage your subscription sources</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="btn-add-sub" class="btn-primary flex items-center gap-2">
+          <span class="i-heroicons-plus"></span>
+          Add Subscription
+        </button>
+        <button id="btn-fetch-remote" class="btn-ghost flex items-center gap-2">
+          <span class="i-heroicons-cloud-arrow-down"></span>
+          Fetch Remote
+        </button>
+      </div>
+    </div>
+
+    <!-- Subscription List -->
+    <div id="sub-list" class="space-y-3">
+      <p class="text-gray-500">Loading...</p>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+        <h3 id="modal-title" class="text-lg font-semibold mb-4">Add Subscription</h3>
+        <form id="sub-form" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Name</label>
+            <input type="text" id="sub-name" class="input-field" placeholder="my-subscription" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Source URL</label>
+            <input type="url" id="sub-url" class="input-field" placeholder="https://..." />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Content (optional)</label>
+            <textarea id="sub-content" class="input-field h-32" placeholder="Paste subscription content..."></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Target Format</label>
+            <select id="sub-target" class="input-field">
+              <option value="json">JSON (default)</option>
+              <option value="clash">Clash</option>
+              <option value="clash-meta">Clash Meta</option>
+              <option value="sing-box">sing-box</option>
+              <option value="surge">Surge</option>
+              <option value="loon">Loon</option>
+              <option value="quantumult-x">Quantumult X</option>
+              <option value="shadowrocket">Shadowrocket</option>
+            </select>
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button type="button" id="btn-cancel" class="btn-ghost">Cancel</button>
+            <button type="submit" class="btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let subs: any[] = [];
+
+  async function loadSubs() {
+    try {
+      const res = await fetch("/api/subs");
+      const data = await res.json();
+      subs = data.items || [];
+      renderSubs();
+    } catch (e) {
+      document.getElementById("sub-list")!.textContent = "Failed to load subscriptions";
+    }
+  }
+
+  function renderSubs() {
+    const el = document.getElementById("sub-list")!;
+    if (subs.length === 0) {
+      el.textContent = "No subscriptions yet. Add one to get started.";
+      return;
+    }
+    el.textContent = "";
+    for (const sub of subs) {
+      const card = document.createElement("div");
+      card.className = "card flex items-center justify-between";
+
+      const info = document.createElement("div");
+      const name = document.createElement("p");
+      name.className = "font-medium";
+      name.textContent = sub.name || "Unnamed";
+      const meta = document.createElement("p");
+      meta.className = "text-sm text-gray-500";
+      meta.textContent = sub.url || sub.source || "Manual content";
+      info.appendChild(name);
+      info.appendChild(meta);
+
+      const actions = document.createElement("div");
+      actions.className = "flex gap-2";
+
+      const exportBtn = document.createElement("button");
+      exportBtn.className = "btn-ghost text-sm px-2 py-1";
+      exportBtn.textContent = "Export";
+      exportBtn.onclick = () => exportSub(sub.name);
+
+      const refreshBtn = document.createElement("button");
+      refreshBtn.className = "btn-ghost text-sm px-2 py-1";
+      refreshBtn.textContent = "Refresh";
+      refreshBtn.onclick = () => refreshSub(sub.name);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "btn-ghost text-sm px-2 py-1 text-red-500";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.onclick = () => deleteSub(sub.name);
+
+      actions.appendChild(exportBtn);
+      actions.appendChild(refreshBtn);
+      actions.appendChild(deleteBtn);
+
+      card.appendChild(info);
+      card.appendChild(actions);
+      el.appendChild(card);
+    }
+  }
+
+  async function exportSub(name: string) {
+    try {
+      const res = await fetch(`/api/sub/${name}/export`);
+      const data = await res.json();
+      const blob = new Blob([data.content || JSON.stringify(data, null, 2)], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name}-export.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + e);
+    }
+  }
+
+  async function refreshSub(name: string) {
+    try {
+      const res = await fetch(`/api/sub/${name}/refresh`, { method: "POST" });
+      const data = await res.json();
+      alert(data.ok ? "Refreshed successfully" : "Refresh failed: " + (data.error || "unknown"));
+    } catch (e) {
+      alert("Refresh failed: " + e);
+    }
+  }
+
+  async function deleteSub(name: string) {
+    if (!confirm(`Delete subscription "${name}"?`)) return;
+    try {
+      await fetch(`/api/sub/${name}`, { method: "DELETE" });
+      await loadSubs();
+    } catch (e) {
+      alert("Delete failed: " + e);
+    }
+  }
+
+  // Modal
+  const modal = document.getElementById("modal-overlay")!;
+  document.getElementById("btn-add-sub")?.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  });
+  document.getElementById("btn-cancel")?.addEventListener("click", () => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  });
+
+  // Form submit
+  document.getElementById("sub-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = (document.getElementById("sub-name") as HTMLInputElement).value;
+    const url = (document.getElementById("sub-url") as HTMLInputElement).value;
+    const content = (document.getElementById("sub-content") as HTMLTextAreaElement).value;
+
+    try {
+      await fetch("/api/subs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, url: url || undefined, content: content || undefined }),
+      });
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      await loadSubs();
+    } catch (e) {
+      alert("Save failed: " + e);
+    }
+  });
+
+  // Fetch remote
+  document.getElementById("btn-fetch-remote")?.addEventListener("click", async () => {
+    const url = prompt("Enter remote subscription URL:");
+    if (!url) return;
+    try {
+      const res = await fetch("/api/native/fetch/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      alert(`Parsed ${data.stats?.parsed || 0} nodes, ${data.stats?.skipped || 0} skipped`);
+    } catch (e) {
+      alert("Fetch failed: " + e);
+    }
+  });
+
+  loadSubs();
+</script>

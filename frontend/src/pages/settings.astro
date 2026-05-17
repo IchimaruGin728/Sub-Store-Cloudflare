@@ -1,0 +1,179 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Settings - Sub-Store">
+  <div class="p-6 max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold mb-2">Settings</h2>
+    <p class="text-gray-500 mb-6">Configure your Sub-Store connection</p>
+
+    <!-- Connection -->
+    <div class="card mb-6">
+      <h3 class="text-lg font-semibold mb-4">Connection</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Backend URL</label>
+          <input type="url" id="setting-backend-url" class="input-field"
+            placeholder="https://sub-store-cloudflare.your-subdomain.workers.dev" />
+          <p class="text-xs text-gray-400 mt-1">Your worker-rs backend URL</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Access Token</label>
+          <input type="password" id="setting-token" class="input-field" placeholder="Your JWT token" />
+          <p class="text-xs text-gray-400 mt-1">Token from Secrets Store</p>
+        </div>
+        <button id="btn-save-settings" class="btn-primary">Save Settings</button>
+        <button id="btn-test-connection" class="btn-ghost ml-2">Test Connection</button>
+      </div>
+    </div>
+
+    <!-- Tokens -->
+    <div class="card mb-6">
+      <h3 class="text-lg font-semibold mb-4">API Tokens</h3>
+      <div id="token-list" class="space-y-2">
+        <p class="text-gray-500">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Backup -->
+    <div class="card mb-6">
+      <h3 class="text-lg font-semibold mb-4">Backup & Restore</h3>
+      <div class="flex gap-3">
+        <button id="btn-export-backup" class="btn-primary">Export Backup</button>
+        <label class="btn-ghost cursor-pointer">
+          Import Backup
+          <input type="file" id="input-import-backup" class="hidden" accept=".json" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Worker Info -->
+    <div class="card">
+      <h3 class="text-lg font-semibold mb-4">Worker Info</h3>
+      <div id="worker-info" class="text-sm text-gray-500">Loading...</div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  // Load saved settings
+  const savedUrl = localStorage.getItem("sub-store-backend-url") || "";
+  const savedToken = localStorage.getItem("sub-store-token") || "";
+  (document.getElementById("setting-backend-url") as HTMLInputElement).value = savedUrl;
+  (document.getElementById("setting-token") as HTMLInputElement).value = savedToken;
+
+  // Save settings
+  document.getElementById("btn-save-settings")?.addEventListener("click", () => {
+    const url = (document.getElementById("setting-backend-url") as HTMLInputElement).value;
+    const token = (document.getElementById("setting-token") as HTMLInputElement).value;
+    localStorage.setItem("sub-store-backend-url", url);
+    localStorage.setItem("sub-store-token", token);
+    alert("Settings saved!");
+  });
+
+  // Test connection
+  document.getElementById("btn-test-connection")?.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/api/utils/worker-status");
+      const data = await res.json();
+      alert(`Connected! Backend: ${data.backend}, Version: ${data.version}`);
+    } catch (e) {
+      alert("Connection failed: " + e);
+    }
+  });
+
+  // Export backup
+  document.getElementById("btn-export-backup")?.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/api/backup");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sub-store-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + e);
+    }
+  });
+
+  // Import backup
+  document.getElementById("input-import-backup")?.addEventListener("change", async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    try {
+      const data = JSON.parse(text);
+      const res = await fetch("/api/backup/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      alert(`Restored ${result.restored || 0} items`);
+    } catch (e) {
+      alert("Import failed: " + e);
+    }
+  });
+
+  // Load tokens
+  async function loadTokens() {
+    try {
+      const res = await fetch("/api/tokens");
+      const data = await res.json();
+      const el = document.getElementById("token-list")!;
+      const items = data.items || [];
+      if (items.length === 0) {
+        el.textContent = "No tokens configured.";
+        return;
+      }
+      el.textContent = "";
+      for (const token of items) {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0";
+        const name = document.createElement("span");
+        name.textContent = token.name || "Unnamed token";
+        row.appendChild(name);
+        el.appendChild(row);
+      }
+    } catch (e) {
+      document.getElementById("token-list")!.textContent = "Failed to load tokens";
+    }
+  }
+
+  // Load worker info
+  async function loadWorkerInfo() {
+    try {
+      const res = await fetch("/api/utils/env");
+      const data = await res.json();
+      const el = document.getElementById("worker-info")!;
+      el.textContent = "";
+      const items = [
+        ["Backend", data.backend],
+        ["Version", data.version],
+        ["Runtime", data.meta?.worker?.runtime],
+        ["Adapter", data.meta?.worker?.adapter],
+        ["Cloudflare", data.isCloudflare ? "Yes" : "No"],
+      ];
+      for (const [label, value] of items) {
+        const row = document.createElement("div");
+        row.className = "flex gap-2 py-1";
+        const labelEl = document.createElement("span");
+        labelEl.className = "text-gray-500 w-24";
+        labelEl.textContent = label + ":";
+        const valueEl = document.createElement("span");
+        valueEl.textContent = value || "N/A";
+        row.appendChild(labelEl);
+        row.appendChild(valueEl);
+        el.appendChild(row);
+      }
+    } catch (e) {
+      document.getElementById("worker-info")!.textContent = "Failed to load";
+    }
+  }
+
+  loadTokens();
+  loadWorkerInfo();
+</script>
