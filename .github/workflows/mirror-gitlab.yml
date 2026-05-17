@@ -11,7 +11,7 @@ jobs:
           fetch-depth: 0
       - uses: wearerequired/git-mirror-action@v1
         with:
-          source-repo: https://github.com/IchimaruGin728/Sub-Store-Cloudflare-Fronted.git
-          destination-repo: git@gitlab.com:IchimaruGin728/sub-store-cloudflare-fronted.git
+          source-repo: https://github.com/IchimaruGin728/Sub-Store-Cloudflare.git
+          destination-repo: git@gitlab.com:IchimaruGin728/sub-store-cloudflare.git
         env:
           SSH_PRIVATE_KEY: ${{ secrets.GITLAB_SSH_KEY }}
