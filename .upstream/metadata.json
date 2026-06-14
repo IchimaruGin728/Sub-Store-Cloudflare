@@ -1,16 +1,16 @@
 {
-  "checkedAt": "2026-06-12T23:58:24.758Z",
+  "checkedAt": "2026-06-14T23:50:13.919Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.24.8",
-  "packageVersion": "26.24.8",
-  "previousCloudflareVersion": "26.24.7",
+  "cloudflareVersion": "26.25.0",
+  "packageVersion": "26.25.0",
+  "previousCloudflareVersion": "26.24.8",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-06-05T23:58:24.758Z",
-    "until": "2026-06-12T23:58:24.758Z"
+    "since": "2026-06-07T23:50:13.919Z",
+    "until": "2026-06-14T23:50:13.919Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
@@ -104,13 +104,6 @@
         "name": "2.24.8",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.8",
         "publishedAt": "2026-06-08T03:20:03Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.24.7",
-        "name": "2.24.7",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.7",
-        "publishedAt": "2026-06-06T06:33:34Z"
       }
     ],
     "frontend": [
@@ -134,25 +127,11 @@
         "name": "2.17.34",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.34",
         "publishedAt": "2026-06-08T03:24:10Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.33",
-        "name": "2.17.33",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.33",
-        "publishedAt": "2026-06-07T02:28:27Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.32",
-        "name": "2.17.32",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.32",
-        "publishedAt": "2026-06-06T05:04:35Z"
       }
     ]
   },
   "previous": {
     "backend": "2.24.19",
-    "frontend": "2.17.35"
+    "frontend": "2.17.36"
   }
 }
