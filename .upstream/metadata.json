@@ -1,33 +1,47 @@
 {
-  "checkedAt": "2026-06-15T11:21:01.716Z",
+  "checkedAt": "2026-06-16T00:03:08.069Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.25.1",
-  "packageVersion": "26.25.1",
-  "previousCloudflareVersion": "26.25.0",
+  "cloudflareVersion": "26.25.2",
+  "packageVersion": "26.25.2",
+  "previousCloudflareVersion": "26.25.1",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-06-08T11:21:01.716Z",
-    "until": "2026-06-15T11:21:01.716Z"
+    "since": "2026-06-09T00:03:08.069Z",
+    "until": "2026-06-16T00:03:08.069Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.24.19",
-    "name": "2.24.19",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.19",
-    "publishedAt": "2026-06-12T00:11:52Z"
+    "tagName": "2.24.21",
+    "name": "2.24.21",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.21",
+    "publishedAt": "2026-06-15T14:19:16Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
-    "tagName": "2.17.37",
-    "name": "2.17.37",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.37",
-    "publishedAt": "2026-06-15T07:07:04Z"
+    "tagName": "2.17.40",
+    "name": "2.17.40",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.40",
+    "publishedAt": "2026-06-15T14:26:58Z"
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.24.21",
+        "name": "2.24.21",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.21",
+        "publishedAt": "2026-06-15T14:19:16Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.24.20",
+        "name": "2.24.20",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.20",
+        "publishedAt": "2026-06-15T11:40:54Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.24.19",
@@ -90,16 +104,30 @@
         "name": "2.24.10",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.10",
         "publishedAt": "2026-06-09T07:30:38Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.24.9",
-        "name": "2.24.9",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.9",
-        "publishedAt": "2026-06-08T17:30:52Z"
       }
     ],
     "frontend": [
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.17.40",
+        "name": "2.17.40",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.40",
+        "publishedAt": "2026-06-15T14:26:58Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.17.39",
+        "name": "2.17.39",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.39",
+        "publishedAt": "2026-06-15T12:12:26Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.17.38",
+        "name": "2.17.38",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.38",
+        "publishedAt": "2026-06-15T12:10:11Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store-Front-End",
         "tagName": "2.17.37",
@@ -113,18 +141,11 @@
         "name": "2.17.36",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.36",
         "publishedAt": "2026-06-12T10:57:20Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.35",
-        "name": "2.17.35",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.35",
-        "publishedAt": "2026-06-08T18:06:09Z"
       }
     ]
   },
   "previous": {
     "backend": "2.24.19",
-    "frontend": "2.17.36"
+    "frontend": "2.17.37"
   }
 }
