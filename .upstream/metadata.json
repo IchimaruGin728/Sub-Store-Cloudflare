@@ -1,23 +1,23 @@
 {
-  "checkedAt": "2026-06-21T23:53:17.418Z",
+  "checkedAt": "2026-06-22T11:11:17.824Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.26.1",
-  "packageVersion": "26.26.1",
-  "previousCloudflareVersion": "26.25.11",
+  "cloudflareVersion": "26.26.2",
+  "packageVersion": "26.26.2",
+  "previousCloudflareVersion": "26.26.1",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-06-14T23:53:17.418Z",
-    "until": "2026-06-21T23:53:17.418Z"
+    "since": "2026-06-15T11:11:17.824Z",
+    "until": "2026-06-22T11:11:17.824Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.31.1",
-    "name": "2.31.1",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.1",
-    "publishedAt": "2026-06-21T08:55:32Z"
+    "tagName": "2.31.2",
+    "name": "2.31.2",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.2",
+    "publishedAt": "2026-06-22T05:47:03Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
@@ -28,6 +28,13 @@
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.31.2",
+        "name": "2.31.2",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.2",
+        "publishedAt": "2026-06-22T05:47:03Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.31.1",
@@ -309,18 +316,11 @@
         "name": "2.17.38",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.38",
         "publishedAt": "2026-06-15T12:10:11Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.37",
-        "name": "2.17.37",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.37",
-        "publishedAt": "2026-06-15T07:07:04Z"
       }
     ]
   },
   "previous": {
     "backend": "2.31.1",
-    "frontend": "2.26.3"
+    "frontend": "2.26.4"
   }
 }
