@@ -1,33 +1,47 @@
 {
-  "checkedAt": "2026-06-22T23:52:46.874Z",
+  "checkedAt": "2026-06-23T23:44:38.358Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.26.3",
-  "packageVersion": "26.26.3",
-  "previousCloudflareVersion": "26.26.2",
+  "cloudflareVersion": "26.26.4",
+  "packageVersion": "26.26.4",
+  "previousCloudflareVersion": "26.26.3",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-06-15T23:52:46.874Z",
-    "until": "2026-06-22T23:52:46.874Z"
+    "since": "2026-06-16T23:44:38.358Z",
+    "until": "2026-06-23T23:44:38.358Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.31.3",
-    "name": "2.31.3",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.3",
-    "publishedAt": "2026-06-22T15:46:46Z"
+    "tagName": "2.31.5",
+    "name": "2.31.5",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.5",
+    "publishedAt": "2026-06-23T15:13:21Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
-    "tagName": "2.26.4",
-    "name": "2.26.4",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.26.4",
-    "publishedAt": "2026-06-21T13:39:20Z"
+    "tagName": "2.26.5",
+    "name": "2.26.5",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.26.5",
+    "publishedAt": "2026-06-23T13:08:01Z"
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.31.5",
+        "name": "2.31.5",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.5",
+        "publishedAt": "2026-06-23T15:13:21Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.31.4",
+        "name": "2.31.4",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.31.4",
+        "publishedAt": "2026-06-23T13:06:37Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.31.3",
@@ -111,16 +125,16 @@
         "name": "2.25.0",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.25.0",
         "publishedAt": "2026-06-18T11:12:55Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.24.22",
-        "name": "2.24.22",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.24.22",
-        "publishedAt": "2026-06-16T04:23:56Z"
       }
     ],
     "frontend": [
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.26.5",
+        "name": "2.26.5",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.26.5",
+        "publishedAt": "2026-06-23T13:08:01Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store-Front-End",
         "tagName": "2.26.4",
@@ -267,32 +281,11 @@
         "name": "2.17.45",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.45",
         "publishedAt": "2026-06-17T06:54:17Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.44",
-        "name": "2.17.44",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.44",
-        "publishedAt": "2026-06-16T19:29:07Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.42",
-        "name": "2.17.42",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.42",
-        "publishedAt": "2026-06-16T06:46:52Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.17.41",
-        "name": "2.17.41",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.17.41",
-        "publishedAt": "2026-06-16T03:55:31Z"
       }
     ]
   },
   "previous": {
-    "backend": "2.31.2",
+    "backend": "2.31.3",
     "frontend": "2.26.4"
   }
 }
