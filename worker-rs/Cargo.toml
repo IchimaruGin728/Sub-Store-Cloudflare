@@ -1,0 +1,25 @@
+[package]
+name = "sub-store-cloudflare-worker"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+console_error_panic_hook = "*"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+serde_yaml = "*"
+base64 = "*"
+regex = "*"
+url = "*"
+js-sys = "*"
+worker = { version = "0.8.3", features = ["d1", "queue"] }
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+opt-level = "s"

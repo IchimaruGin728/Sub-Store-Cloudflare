@@ -1,0 +1,78 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "name": "sub-store-cloudflare",
+    "main": "worker-rs/build/worker/shim.mjs",
+    "compatibility_date": "2026-05-07",
+    "build": {
+        "command": "bash scripts/build-worker-cf.sh"
+    },
+    "vars": {
+        "SUB_STORE_BACKEND_VERSION": "upstream-latest",
+        "SUB_STORE_CLOUDFLARE_VERSION": "26.29.5"
+    },
+    "secrets_store_secrets": [
+        {
+            "binding": "JWT_SECRET_STORE",
+            "store_id": "eda45cbf8bd84149b51526d9fc2d66f3",
+            "secret_name": "JWT_SECRET"
+        }
+    ],
+    "d1_databases": [
+        {
+            "binding": "SUB_STORE_DB",
+            "database_name": "sub-store-cloudflare-db",
+            "database_id": "67cde9f2-8a13-43c5-9f9f-a068f44540ab",
+            "migrations_dir": "migrations"
+        }
+    ],
+    "kv_namespaces": [
+        {
+            "binding": "SUB_STORE_CACHE",
+            "id": "da911c88a4bc452a9d6dd3d7e02d80f7"
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "SUB_STORE_BACKUP",
+            "bucket_name": "sub-store-backups"
+        }
+    ],
+    "queues": {
+        "producers": [
+            {
+                "binding": "REFRESH_QUEUE",
+                "queue": "sub-store-refresh"
+            }
+        ],
+        "consumers": [
+            {
+                "queue": "sub-store-refresh",
+                "max_batch_size": 10,
+                "max_batch_timeout": 30
+            }
+        ]
+    },
+    "analytics_engine_datasets": [
+        {
+            "binding": "ANALYTICS",
+            "dataset": "sub_store_metrics"
+        }
+    ],
+    "triggers": {
+        "crons": [
+            "28 23 * * *",
+            "16 9 * * *"
+        ]
+    },
+    "observability": {
+        "logs": {
+            "enabled": true,
+            "invocation_logs": false,
+            "head_sampling_rate": 0
+        },
+        "traces": {
+            "enabled": true,
+            "head_sampling_rate": 0
+        }
+    }
+}

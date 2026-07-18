@@ -1,0 +1,32 @@
+AGENTS.md
+
+# Dependencies
+node_modules/
+sub-store
+sub-store*
+.vite
+worker-rs/target/
+worker-rs/build/
+worker-rs/Cargo.lock
+
+# Build output
+dist/
+src/sub-store-bundle.js
+public/dashboard/
+
+# QuickJS wasm files copied from node_modules
+src/adapters/quickjs/wasm/*.wasm
+src/adapters/quickjs/wasm/*.wasm.map.txt
+
+# Wrangler
+.wrangler/
+.dev.vars
+
+# Lock files (use your own package manager)
+bun.lock
+package-lock.json
+pnpm-lock.yaml
+
+# OS files
+.DS_Store
+.astro/
