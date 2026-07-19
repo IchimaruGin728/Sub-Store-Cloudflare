@@ -1,23 +1,23 @@
 {
-  "checkedAt": "2026-07-18T10:39:32.051Z",
+  "checkedAt": "2026-07-19T00:14:11.523Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.29.5",
-  "packageVersion": "26.29.5",
-  "previousCloudflareVersion": "26.29.4",
+  "cloudflareVersion": "26.29.6",
+  "packageVersion": "26.29.6",
+  "previousCloudflareVersion": "26.29.5",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-07-11T10:39:32.051Z",
-    "until": "2026-07-18T10:39:32.051Z"
+    "since": "2026-07-12T00:14:11.523Z",
+    "until": "2026-07-19T00:14:11.523Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.36.11",
-    "name": "2.36.11",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.11",
-    "publishedAt": "2026-07-18T09:13:23Z"
+    "tagName": "2.36.12",
+    "name": "2.36.12",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.12",
+    "publishedAt": "2026-07-19T00:01:34Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
@@ -28,6 +28,13 @@
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.36.12",
+        "name": "2.36.12",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.12",
+        "publishedAt": "2026-07-19T00:01:34Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.36.11",
@@ -76,13 +83,6 @@
         "name": "2.36.5",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.5",
         "publishedAt": "2026-07-12T16:25:20Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.36.4",
-        "name": "2.36.4",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.4",
-        "publishedAt": "2026-07-11T15:05:40Z"
       }
     ],
     "frontend": [
@@ -110,7 +110,7 @@
     ]
   },
   "previous": {
-    "backend": "2.36.7",
+    "backend": "2.36.11",
     "frontend": "2.28.9"
   }
 }
