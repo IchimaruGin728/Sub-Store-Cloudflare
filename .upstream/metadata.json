@@ -1,16 +1,16 @@
 {
-  "checkedAt": "2026-07-26T01:03:32.557Z",
+  "checkedAt": "2026-07-27T01:04:54.981Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.30.9",
-  "packageVersion": "26.30.9",
-  "previousCloudflareVersion": "26.30.8",
+  "cloudflareVersion": "26.31.0",
+  "packageVersion": "26.31.0",
+  "previousCloudflareVersion": "26.30.9",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-07-19T01:03:32.557Z",
-    "until": "2026-07-26T01:03:32.557Z"
+    "since": "2026-07-20T01:04:54.981Z",
+    "until": "2026-07-27T01:04:54.981Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
@@ -148,18 +148,11 @@
         "name": "2.29.2",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.2",
         "publishedAt": "2026-07-20T15:06:27Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.29.1",
-        "name": "2.29.1",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.1",
-        "publishedAt": "2026-07-19T06:01:35Z"
       }
     ]
   },
   "previous": {
     "backend": "2.36.22",
-    "frontend": "2.29.7"
+    "frontend": "2.29.8"
   }
 }
