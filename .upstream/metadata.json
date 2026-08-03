@@ -1,33 +1,40 @@
 {
-  "checkedAt": "2026-08-01T00:59:54.695Z",
+  "checkedAt": "2026-08-03T01:02:15.800Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.31.3",
-  "packageVersion": "26.31.3",
-  "previousCloudflareVersion": "26.31.2",
+  "cloudflareVersion": "26.32.1",
+  "packageVersion": "26.32.1",
+  "previousCloudflareVersion": "26.31.3",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-07-25T00:59:54.695Z",
-    "until": "2026-08-01T00:59:54.695Z"
+    "since": "2026-07-27T01:02:15.800Z",
+    "until": "2026-08-03T01:02:15.800Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.36.27",
-    "name": "2.36.27",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.27",
-    "publishedAt": "2026-07-31T18:06:19Z"
+    "tagName": "2.36.28",
+    "name": "2.36.28",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.28",
+    "publishedAt": "2026-08-02T11:08:16Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
-    "tagName": "2.29.9",
-    "name": "2.29.9",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.9",
-    "publishedAt": "2026-07-31T18:07:48Z"
+    "tagName": "2.29.10",
+    "name": "2.29.10",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.10",
+    "publishedAt": "2026-08-02T11:09:30Z"
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.36.28",
+        "name": "2.36.28",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.28",
+        "publishedAt": "2026-08-02T11:08:16Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.36.27",
@@ -62,55 +69,27 @@
         "name": "2.36.23",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.23",
         "publishedAt": "2026-07-27T15:12:33Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.36.22",
-        "name": "2.36.22",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.22",
-        "publishedAt": "2026-07-25T06:58:23Z"
       }
     ],
     "frontend": [
+      {
+        "repo": "sub-store-org/Sub-Store-Front-End",
+        "tagName": "2.29.10",
+        "name": "2.29.10",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.10",
+        "publishedAt": "2026-08-02T11:09:30Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store-Front-End",
         "tagName": "2.29.9",
         "name": "2.29.9",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.9",
         "publishedAt": "2026-07-31T18:07:48Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.29.8",
-        "name": "2.29.8",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.8",
-        "publishedAt": "2026-07-25T16:11:43Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.29.7",
-        "name": "2.29.7",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.7",
-        "publishedAt": "2026-07-25T07:15:24Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.29.6",
-        "name": "2.29.6",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.6",
-        "publishedAt": "2026-07-25T05:40:13Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.29.5",
-        "name": "2.29.5",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.29.5",
-        "publishedAt": "2026-07-25T04:15:09Z"
       }
     ]
   },
   "previous": {
-    "backend": "2.36.26",
-    "frontend": "2.29.8"
+    "backend": "2.36.27",
+    "frontend": "2.29.9"
   }
 }
