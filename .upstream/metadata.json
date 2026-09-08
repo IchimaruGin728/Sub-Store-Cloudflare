@@ -1,23 +1,23 @@
 {
-  "checkedAt": "2026-09-07T15:04:52.760Z",
+  "checkedAt": "2026-09-08T13:39:15.384Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.37.1",
-  "packageVersion": "26.37.1",
-  "previousCloudflareVersion": "26.37.0",
+  "cloudflareVersion": "26.37.2",
+  "packageVersion": "26.37.2",
+  "previousCloudflareVersion": "26.37.1",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-08-31T15:04:52.760Z",
-    "until": "2026-09-07T15:04:52.760Z"
+    "since": "2026-09-01T13:39:15.384Z",
+    "until": "2026-09-08T13:39:15.384Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.38.4",
-    "name": "2.38.4",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.38.4",
-    "publishedAt": "2026-09-07T06:48:59Z"
+    "tagName": "2.38.5",
+    "name": "2.38.5",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.38.5",
+    "publishedAt": "2026-09-08T12:31:37Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
@@ -28,6 +28,13 @@
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.38.5",
+        "name": "2.38.5",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.38.5",
+        "publishedAt": "2026-09-08T12:31:37Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.38.4",
@@ -90,13 +97,6 @@
         "name": "2.36.57",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.57",
         "publishedAt": "2026-09-02T08:47:02Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.36.56",
-        "name": "2.36.56",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.36.56",
-        "publishedAt": "2026-09-01T07:20:10Z"
       }
     ],
     "frontend": [
@@ -127,18 +127,11 @@
         "name": "2.31.0",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.31.0",
         "publishedAt": "2026-09-03T07:53:21Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.30.00",
-        "name": "2.30.00",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.30.00",
-        "publishedAt": "2026-09-01T10:05:16Z"
       }
     ]
   },
   "previous": {
-    "backend": "2.38.2",
-    "frontend": "2.31.2"
+    "backend": "2.38.4",
+    "frontend": "2.31.3"
   }
 }
