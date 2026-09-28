@@ -1,16 +1,16 @@
 {
-  "checkedAt": "2026-09-27T14:42:38.013Z",
+  "checkedAt": "2026-09-28T01:47:40.405Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.39.3",
-  "packageVersion": "26.39.3",
-  "previousCloudflareVersion": "26.39.2",
+  "cloudflareVersion": "26.40.0",
+  "packageVersion": "26.40.0",
+  "previousCloudflareVersion": "26.39.3",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-09-20T14:42:38.013Z",
-    "until": "2026-09-27T14:42:38.013Z"
+    "since": "2026-09-21T01:47:40.405Z",
+    "until": "2026-09-28T01:47:40.405Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
@@ -89,7 +89,7 @@
     ]
   },
   "previous": {
-    "backend": "2.41.2",
+    "backend": "2.42.2",
     "frontend": "2.34.0"
   }
 }
