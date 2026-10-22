@@ -1,23 +1,23 @@
 {
-  "checkedAt": "2026-10-19T01:25:50.566Z",
+  "checkedAt": "2026-10-22T01:39:03.288Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.43.0",
-  "packageVersion": "26.43.0",
-  "previousCloudflareVersion": "26.42.3",
+  "cloudflareVersion": "26.43.1",
+  "packageVersion": "26.43.1",
+  "previousCloudflareVersion": "26.43.0",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-10-12T01:25:50.566Z",
-    "until": "2026-10-19T01:25:50.566Z"
+    "since": "2026-10-15T01:39:03.288Z",
+    "until": "2026-10-22T01:39:03.288Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.42.6",
-    "name": "2.42.6",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.42.6",
-    "publishedAt": "2026-10-18T04:39:27Z"
+    "tagName": "2.43.0",
+    "name": "2.43.0",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.43.0",
+    "publishedAt": "2026-10-21T19:25:52Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
@@ -28,6 +28,13 @@
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.43.0",
+        "name": "2.43.0",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.43.0",
+        "publishedAt": "2026-10-21T19:25:52Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.42.6",
@@ -41,13 +48,6 @@
         "name": "2.42.5",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.42.5",
         "publishedAt": "2026-10-15T08:25:03Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.42.4",
-        "name": "2.42.4",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.42.4",
-        "publishedAt": "2026-10-14T07:40:28Z"
       }
     ],
     "frontend": [
