@@ -1,23 +1,23 @@
 {
-  "checkedAt": "2026-11-19T18:18:41.418Z",
+  "checkedAt": "2026-11-21T16:48:13.809Z",
   "timezone": "Asia/Singapore",
-  "cloudflareVersion": "26.47.3",
-  "packageVersion": "26.47.3",
-  "previousCloudflareVersion": "26.47.2",
+  "cloudflareVersion": "26.47.4",
+  "packageVersion": "26.47.4",
+  "previousCloudflareVersion": "26.47.3",
   "versioning": {
     "scheme": "YY.ISO_WEEK.UPDATE",
     "update": "increments only when monitored upstream releases change in the same ISO week"
   },
   "recentWindow": {
-    "since": "2026-11-12T18:18:41.418Z",
-    "until": "2026-11-19T18:18:41.418Z"
+    "since": "2026-11-14T16:48:13.809Z",
+    "until": "2026-11-21T16:48:13.809Z"
   },
   "backend": {
     "repo": "sub-store-org/Sub-Store",
-    "tagName": "2.44.20",
-    "name": "2.44.20",
-    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.20",
-    "publishedAt": "2026-11-19T16:21:40Z"
+    "tagName": "2.44.23",
+    "name": "2.44.23",
+    "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.23",
+    "publishedAt": "2026-11-21T12:57:43Z"
   },
   "frontend": {
     "repo": "sub-store-org/Sub-Store-Front-End",
@@ -28,6 +28,27 @@
   },
   "recent": {
     "backend": [
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.44.23",
+        "name": "2.44.23",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.23",
+        "publishedAt": "2026-11-21T12:57:43Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.44.22",
+        "name": "2.44.22",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.22",
+        "publishedAt": "2026-11-21T09:52:33Z"
+      },
+      {
+        "repo": "sub-store-org/Sub-Store",
+        "tagName": "2.44.21",
+        "name": "2.44.21",
+        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.21",
+        "publishedAt": "2026-11-21T07:24:45Z"
+      },
       {
         "repo": "sub-store-org/Sub-Store",
         "tagName": "2.44.20",
@@ -69,62 +90,12 @@
         "name": "2.44.15",
         "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.15",
         "publishedAt": "2026-11-15T06:13:21Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.44.14",
-        "name": "2.44.14",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.14",
-        "publishedAt": "2026-11-14T15:55:00Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.44.13",
-        "name": "2.44.13",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.13",
-        "publishedAt": "2026-11-14T09:02:39Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.44.12",
-        "name": "2.44.12",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.12",
-        "publishedAt": "2026-11-14T02:55:30Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.44.11",
-        "name": "2.44.11",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.11",
-        "publishedAt": "2026-11-13T15:43:41Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.44.10",
-        "name": "2.44.10",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.10",
-        "publishedAt": "2026-11-13T13:04:22Z"
-      },
-      {
-        "repo": "sub-store-org/Sub-Store",
-        "tagName": "2.44.9",
-        "name": "2.44.9",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store/releases/tag/2.44.9",
-        "publishedAt": "2026-11-13T03:41:36Z"
       }
     ],
-    "frontend": [
-      {
-        "repo": "sub-store-org/Sub-Store-Front-End",
-        "tagName": "2.34.3",
-        "name": "2.34.3",
-        "htmlUrl": "https://github.com/sub-store-org/Sub-Store-Front-End/releases/tag/2.34.3",
-        "publishedAt": "2026-11-13T03:52:21Z"
-      }
-    ]
+    "frontend": []
   },
   "previous": {
-    "backend": "2.44.16",
+    "backend": "2.44.20",
     "frontend": "2.34.3"
   }
 }
